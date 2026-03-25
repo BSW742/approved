@@ -126,8 +126,20 @@ import Layout from '../layouts/Layout.astro';
         </div>
       </div>
 
-      <!-- Tabs -->
-      <div class="bg-white rounded-xl border border-slate-200">
+      <!-- Mode Toggle -->
+      <div class="flex justify-center mb-6">
+        <div class="inline-flex bg-slate-100 rounded-full p-1">
+          <button id="mode-input" class="mode-btn px-6 py-2 rounded-full text-sm font-medium transition-all bg-white text-emerald-600 shadow-sm">
+            Input
+          </button>
+          <button id="mode-output" class="mode-btn px-6 py-2 rounded-full text-sm font-medium transition-all text-slate-500 hover:text-slate-700">
+            Output
+          </button>
+        </div>
+      </div>
+
+      <!-- Input Mode Tabs -->
+      <div id="input-mode" class="bg-white rounded-xl border border-slate-200">
         <div class="border-b border-slate-200 overflow-x-auto">
           <nav class="flex -mb-px min-w-max">
             <button data-tab="transactions" class="tab-btn active px-6 py-4 text-sm font-medium border-b-2 border-emerald-500 text-emerald-600 whitespace-nowrap">Transactions</button>
@@ -142,7 +154,6 @@ import Layout from '../layouts/Layout.astro';
             </button>
             <button data-tab="accounts" class="tab-btn px-6 py-4 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700 whitespace-nowrap">Associated Accounts</button>
             <button data-tab="transfers" class="tab-btn px-6 py-4 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700 whitespace-nowrap">Account Transfers</button>
-            <button data-tab="log" class="tab-btn px-6 py-4 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700 whitespace-nowrap">Log</button>
           </nav>
         </div>
 
@@ -335,8 +346,61 @@ import Layout from '../layouts/Layout.astro';
           </div>
         </div>
 
+      </div>
+
+      <!-- Output Mode Tabs -->
+      <div id="output-mode" class="hidden bg-white rounded-xl border border-slate-200">
+        <div class="border-b border-slate-200 overflow-x-auto">
+          <nav class="flex -mb-px min-w-max">
+            <button data-output-tab="average" class="output-tab-btn active px-6 py-4 text-sm font-medium border-b-2 border-emerald-500 text-emerald-600 whitespace-nowrap">Average Expense</button>
+            <button data-output-tab="summary" class="output-tab-btn px-6 py-4 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700 whitespace-nowrap">Application Summary</button>
+            <button data-output-tab="log" class="output-tab-btn px-6 py-4 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700 whitespace-nowrap">Log</button>
+          </nav>
+        </div>
+
+        <!-- Average Expense Tab -->
+        <div id="output-tab-average" class="output-tab-content p-6">
+          <div class="mb-6">
+            <h3 class="text-lg font-semibold text-slate-800 mb-2">Average Monthly Expenses</h3>
+            <p class="text-sm text-slate-500">Based on uploaded statements, here's the average monthly spending breakdown.</p>
+          </div>
+          <div id="average-expense-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <!-- Populated by JS -->
+          </div>
+          <div id="expense-suggestions" class="bg-amber-50 border border-amber-200 rounded-lg p-4">
+            <h4 class="font-medium text-amber-800 mb-2 flex items-center gap-2">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+              </svg>
+              Suggestions to Reduce Expenses
+            </h4>
+            <ul id="expense-suggestion-list" class="space-y-2 text-sm text-amber-700">
+              <!-- Populated by JS -->
+            </ul>
+          </div>
+        </div>
+
+        <!-- Application Summary Tab -->
+        <div id="output-tab-summary" class="output-tab-content hidden p-6">
+          <div class="mb-6 flex items-center justify-between">
+            <div>
+              <h3 class="text-lg font-semibold text-slate-800 mb-2">Application Summary</h3>
+              <p class="text-sm text-slate-500">Narrative summary ready to copy/paste into application forms.</p>
+            </div>
+            <button id="copy-summary" class="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors text-sm font-medium">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+              </svg>
+              Copy to Clipboard
+            </button>
+          </div>
+          <div id="application-summary-content" class="bg-slate-50 rounded-lg p-6 border border-slate-200 whitespace-pre-wrap font-mono text-sm text-slate-700 max-h-[60vh] overflow-y-auto">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+
         <!-- Log Tab -->
-        <div id="tab-log" class="tab-content hidden p-6">
+        <div id="output-tab-log" class="output-tab-content hidden p-6">
           <div class="mb-4">
             <p class="text-sm text-slate-500">Actions taken to represent data correctly - notes and transfer markings.</p>
           </div>
@@ -594,7 +658,7 @@ import Layout from '../layouts/Layout.astro';
       }
     });
 
-    // Tab switching
+    // Tab switching (Input mode)
     document.querySelectorAll('.tab-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         const tab = btn.getAttribute('data-tab');
@@ -609,6 +673,57 @@ import Layout from '../layouts/Layout.astro';
         document.getElementById(`tab-${tab}`)?.classList.remove('hidden');
       });
     });
+
+    // Output mode tab switching
+    document.querySelectorAll('.output-tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const tab = btn.getAttribute('data-output-tab');
+        document.querySelectorAll('.output-tab-btn').forEach(b => {
+          b.classList.remove('active', 'border-emerald-500', 'text-emerald-600');
+          b.classList.add('border-transparent', 'text-slate-500');
+        });
+        btn.classList.add('active', 'border-emerald-500', 'text-emerald-600');
+        btn.classList.remove('border-transparent', 'text-slate-500');
+
+        document.querySelectorAll('.output-tab-content').forEach(c => c.classList.add('hidden'));
+        document.getElementById(`output-tab-${tab}`)?.classList.remove('hidden');
+      });
+    });
+
+    // Mode switching (Input/Output)
+    let currentMode = 'input';
+    const modeInputBtn = document.getElementById('mode-input');
+    const modeOutputBtn = document.getElementById('mode-output');
+    const inputModeContainer = document.getElementById('input-mode');
+    const outputModeContainer = document.getElementById('output-mode');
+
+    function switchMode(mode: 'input' | 'output') {
+      currentMode = mode;
+
+      if (mode === 'input') {
+        modeInputBtn?.classList.add('bg-white', 'text-emerald-600', 'shadow-sm');
+        modeInputBtn?.classList.remove('text-slate-500');
+        modeOutputBtn?.classList.remove('bg-white', 'text-emerald-600', 'shadow-sm');
+        modeOutputBtn?.classList.add('text-slate-500');
+        inputModeContainer?.classList.remove('hidden');
+        outputModeContainer?.classList.add('hidden');
+      } else {
+        modeOutputBtn?.classList.add('bg-white', 'text-emerald-600', 'shadow-sm');
+        modeOutputBtn?.classList.remove('text-slate-500');
+        modeInputBtn?.classList.remove('bg-white', 'text-emerald-600', 'shadow-sm');
+        modeInputBtn?.classList.add('text-slate-500');
+        outputModeContainer?.classList.remove('hidden');
+        inputModeContainer?.classList.add('hidden');
+
+        // Render output mode content
+        renderAverageExpense();
+        renderApplicationSummary();
+        renderLog();
+      }
+    }
+
+    modeInputBtn?.addEventListener('click', () => switchMode('input'));
+    modeOutputBtn?.addEventListener('click', () => switchMode('output'));
 
     // Expenses only toggle
     let expensesOnly = true;
@@ -1429,6 +1544,166 @@ import Layout from '../layouts/Layout.astro';
       document.getElementById('note-modal')?.classList.add('hidden');
       currentNoteTransactionId = null;
     });
+
+    // Render average expense (Output mode)
+    function renderAverageExpense() {
+      if (!prospect) return;
+
+      const analysis = analyzeProspect(prospect);
+      const grid = document.getElementById('average-expense-grid');
+      const suggestionList = document.getElementById('expense-suggestion-list');
+
+      if (!grid) return;
+
+      // Get spending categories sorted by monthly average
+      const categories = analysis.spendingCategories
+        .filter(c => c.monthlyAverage > 0)
+        .sort((a, b) => b.monthlyAverage - a.monthlyAverage);
+
+      grid.innerHTML = categories.map(cat => {
+        const statusIcon = cat.benchmarkStatus === 'above' ?
+          '<svg class="w-4 h-4 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" /></svg>' :
+          cat.benchmarkStatus === 'below' ?
+          '<svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>' :
+          '';
+        const amountClass = cat.benchmarkStatus === 'above' ? 'text-rose-600' :
+                           cat.benchmarkStatus === 'below' ? 'text-emerald-600' : 'text-slate-600';
+
+        return `
+          <div class="bg-slate-50 rounded-lg p-4 border border-slate-100">
+            <div class="flex items-center justify-between mb-2">
+              <span class="font-medium text-slate-700">${cat.category}</span>
+              ${statusIcon}
+            </div>
+            <p class="text-2xl font-bold ${amountClass}">${formatCurrency(cat.monthlyAverage)}</p>
+            <p class="text-xs text-slate-500 mt-1">per month average</p>
+          </div>
+        `;
+      }).join('');
+
+      // Generate suggestions based on above-benchmark categories
+      const suggestions: string[] = [];
+      const aboveBenchmark = categories.filter(c => c.benchmarkStatus === 'above');
+
+      for (const cat of aboveBenchmark.slice(0, 4)) {
+        if (cat.category === 'Entertainment & Streaming') {
+          suggestions.push(`Consider reviewing subscription services - ${cat.category} spending of ${formatCurrency(cat.monthlyAverage)}/month is above average.`);
+        } else if (cat.category === 'Dining & Takeaways') {
+          suggestions.push(`Reducing dining out frequency could save significantly - current spend is ${formatCurrency(cat.monthlyAverage)}/month.`);
+        } else if (cat.category === 'Shopping & Retail') {
+          suggestions.push(`Shopping expenses at ${formatCurrency(cat.monthlyAverage)}/month are above benchmark - consider budgeting for discretionary purchases.`);
+        } else {
+          suggestions.push(`${cat.category} spending of ${formatCurrency(cat.monthlyAverage)}/month is above benchmark.`);
+        }
+      }
+
+      if (suggestions.length === 0) {
+        suggestions.push('Spending is within or below benchmark across all categories - no major concerns identified.');
+      }
+
+      if (suggestionList) {
+        suggestionList.innerHTML = suggestions.map(s => `<li class="flex items-start gap-2"><span class="text-amber-500 mt-1">•</span> ${s}</li>`).join('');
+      }
+    }
+
+    // Render application summary (Output mode)
+    function renderApplicationSummary() {
+      if (!prospect) return;
+
+      const analysis = analyzeProspect(prospect);
+      const container = document.getElementById('application-summary-content');
+
+      if (!container) return;
+
+      const months = analysis.period.months;
+      const periodStr = `${formatDate(analysis.period.start)} to ${formatDate(analysis.period.end)}`;
+
+      // Build narrative summary
+      let summary = `APPLICANT FINANCIAL SUMMARY\n`;
+      summary += `===========================\n\n`;
+      summary += `Applicant: ${prospect.name}\n`;
+      summary += `Analysis Period: ${periodStr} (${months} month${months !== 1 ? 's' : ''})\n\n`;
+
+      summary += `INCOME SUMMARY\n`;
+      summary += `--------------\n`;
+      if (analysis.moneyInSummary.salary.monthly > 0) {
+        summary += `Salary: ${formatCurrency(analysis.moneyInSummary.salary.monthly)}/month\n`;
+      }
+      if (analysis.moneyInSummary.governmentSupport.monthly > 0) {
+        summary += `Government Support: ${formatCurrency(analysis.moneyInSummary.governmentSupport.monthly)}/month\n`;
+      }
+      if (analysis.moneyInSummary.otherMoneyIn.monthly > 0) {
+        summary += `Other Income: ${formatCurrency(analysis.moneyInSummary.otherMoneyIn.monthly)}/month\n`;
+      }
+      summary += `\n`;
+
+      summary += `EXPENSE SUMMARY\n`;
+      summary += `---------------\n`;
+      const totalMonthlyExpenses = analysis.spendingCategories.reduce((sum, c) => sum + c.monthlyAverage, 0);
+      summary += `Total Monthly Expenses: ${formatCurrency(totalMonthlyExpenses)}\n\n`;
+
+      // Top spending categories
+      const topCategories = analysis.spendingCategories
+        .filter(c => c.monthlyAverage > 0)
+        .sort((a, b) => b.monthlyAverage - a.monthlyAverage)
+        .slice(0, 6);
+
+      if (topCategories.length > 0) {
+        summary += `Top Spending Categories:\n`;
+        for (const cat of topCategories) {
+          const status = cat.benchmarkStatus === 'above' ? ' (above avg)' :
+                        cat.benchmarkStatus === 'below' ? ' (below avg)' : '';
+          summary += `  • ${cat.category}: ${formatCurrency(cat.monthlyAverage)}/month${status}\n`;
+        }
+        summary += `\n`;
+      }
+
+      // Key indicators
+      summary += `KEY INDICATORS\n`;
+      summary += `--------------\n`;
+      if (analysis.keyIndicators.gambling.total > 0) {
+        summary += `⚠ Gambling: ${formatCurrency(analysis.keyIndicators.gambling.monthly)}/month (${analysis.keyIndicators.gambling.count} transactions)\n`;
+      }
+      if (analysis.keyIndicators.dishonours.count > 0) {
+        summary += `⚠ Dishonours/Returns: ${analysis.keyIndicators.dishonours.count} transactions\n`;
+      }
+      if (analysis.keyIndicators.debtRepayment.total > 0) {
+        summary += `Debt Repayments: ${formatCurrency(analysis.keyIndicators.debtRepayment.monthly)}/month\n`;
+      }
+      if (analysis.keyIndicators.atmWithdrawals.total > 0) {
+        summary += `ATM Withdrawals: ${formatCurrency(analysis.keyIndicators.atmWithdrawals.monthly)}/month\n`;
+      }
+
+      // Anomalies/attention items
+      const highSeverity = analysis.anomalies.filter(a => a.severity === 'high');
+      if (highSeverity.length > 0) {
+        summary += `\nATTENTION ITEMS\n`;
+        summary += `---------------\n`;
+        for (const a of highSeverity.slice(0, 5)) {
+          summary += `• ${a.description}\n`;
+        }
+      }
+
+      summary += `\n---\n`;
+      summary += `Generated by Approved | ${new Date().toLocaleDateString('en-NZ')}\n`;
+
+      container.textContent = summary;
+
+      // Copy to clipboard handler
+      document.getElementById('copy-summary')?.addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText(summary);
+          const btn = document.getElementById('copy-summary');
+          if (btn) {
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg> Copied!';
+            setTimeout(() => { btn.innerHTML = originalHTML; }, 2000);
+          }
+        } catch (err) {
+          console.error('Failed to copy:', err);
+        }
+      });
+    }
 
     // Render log
     function renderLog() {
