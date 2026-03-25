@@ -72,24 +72,15 @@ import Layout from '../layouts/Layout.astro';
 
     <!-- Analysis Content -->
     <div id="analysis-content" class="hidden">
-      <!-- Summary Bar: Month selector, Avg Expenses, Mode Toggle, Documents -->
+      <!-- Summary Bar: Expense Window, Avg Expenses, Mode Toggle, Documents -->
       <div class="bg-white rounded-t-xl border border-slate-200 border-b-0 p-4">
         <div class="flex items-center justify-between flex-wrap gap-4">
-          <!-- Month Selector -->
-          <div class="flex items-center gap-3">
-            <button id="prev-month" class="p-2 rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-              </svg>
-            </button>
-            <select id="month-selector" class="px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none text-sm font-medium min-w-[160px]">
-              <option value="all">All Months</option>
-            </select>
-            <button id="next-month" class="p-2 rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
+          <!-- Expense Window -->
+          <div class="flex items-center gap-2">
+            <span class="text-xs text-slate-500 uppercase tracking-wide">Expense Window</span>
+            <input type="date" id="window-start" class="px-3 py-1.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none text-sm font-medium" />
+            <span class="text-slate-400">→</span>
+            <input type="date" id="window-end" class="px-3 py-1.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none text-sm font-medium" />
           </div>
 
           <!-- Avg Monthly Expenses -->
@@ -119,6 +110,16 @@ import Layout from '../layouts/Layout.astro';
             <span class="text-sm">docs</span>
             <span class="text-slate-300 mx-1">|</span>
             <span id="txn-count" class="text-sm text-slate-500"></span>
+          </div>
+        </div>
+
+        <!-- Validation Panel -->
+        <div id="window-validation" class="mt-3 pt-3 border-t border-slate-100">
+          <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
+            <span id="val-duration" class="flex items-center gap-1"></span>
+            <span id="val-freshness" class="flex items-center gap-1"></span>
+            <span id="val-coverage" class="flex items-center gap-1"></span>
+            <span id="val-gaps" class="flex items-center gap-1"></span>
           </div>
         </div>
       </div>
@@ -586,73 +587,171 @@ import Layout from '../layouts/Layout.astro';
     let prospect: Prospect | undefined = getProspect(prospectId);
     let currentPage = 1;
     const pageSize = 25;
-    let selectedMonth = 'all'; // 'all' or 'YYYY-MM'
-    let availableMonths: string[] = [];
+
+    // Expense Window state
+    let windowStart: string = '';
+    let windowEnd: string = '';
 
     if (!prospect) {
       window.location.href = '/';
     }
 
-    // Get unique months from transactions
-    function getAvailableMonths(): string[] {
-      if (!prospect) return [];
-      const months = new Set<string>();
-      for (const txn of prospect.transactions) {
-        if (txn.date) {
-          months.add(txn.date.substring(0, 7)); // YYYY-MM
-        }
-      }
-      return Array.from(months).sort().reverse(); // Most recent first
+    // Calculate default 3-month window (ending last day of previous month)
+    function getDefault3MonthWindow(): { start: string; end: string } {
+      const today = new Date();
+      // End of previous month
+      const endDate = new Date(today.getFullYear(), today.getMonth(), 0);
+      // Start is 3 months before end (first day of that month)
+      const startDate = new Date(endDate.getFullYear(), endDate.getMonth() - 2, 1);
+
+      return {
+        start: startDate.toISOString().split('T')[0],
+        end: endDate.toISOString().split('T')[0]
+      };
     }
 
-    // Filter transactions by selected month
+    // Filter transactions by expense window
     function getFilteredTransactions() {
       if (!prospect) return [];
-      if (selectedMonth === 'all') return prospect.transactions;
-      return prospect.transactions.filter(t => t.date?.startsWith(selectedMonth));
+      if (!windowStart || !windowEnd) return prospect.transactions;
+
+      return prospect.transactions.filter(t => {
+        if (!t.date) return false;
+        return t.date >= windowStart && t.date <= windowEnd;
+      });
     }
 
-    // Format month for display
-    function formatMonth(monthStr: string): string {
-      const [year, month] = monthStr.split('-');
-      const date = new Date(parseInt(year), parseInt(month) - 1);
-      return date.toLocaleDateString('en-NZ', { month: 'long', year: 'numeric' });
+    // Validate expense window
+    function validateWindow(): { duration: { ok: boolean; months: number }; freshness: { ok: boolean; monthsOld: number }; coverage: { days: number; totalDays: number }; gaps: string[] } {
+      const result = {
+        duration: { ok: false, months: 0 },
+        freshness: { ok: false, monthsOld: 0 },
+        coverage: { days: 0, totalDays: 0 },
+        gaps: [] as string[]
+      };
+
+      if (!windowStart || !windowEnd) return result;
+
+      const start = new Date(windowStart);
+      const end = new Date(windowEnd);
+      const today = new Date();
+
+      // Duration check (should be ~3 months = ~90 days)
+      const daysDiff = Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+      result.duration.months = Math.round(daysDiff / 30 * 10) / 10;
+      result.duration.ok = daysDiff >= 84 && daysDiff <= 96; // ~3 months with some tolerance
+      result.coverage.totalDays = daysDiff;
+
+      // Freshness check (end date should be within last month)
+      const endOfLastMonth = new Date(today.getFullYear(), today.getMonth(), 0);
+      const endOfTwoMonthsAgo = new Date(today.getFullYear(), today.getMonth() - 1, 0);
+      const monthsOld = (today.getFullYear() - end.getFullYear()) * 12 + (today.getMonth() - end.getMonth());
+      result.freshness.monthsOld = monthsOld;
+      result.freshness.ok = end >= endOfTwoMonthsAgo; // Can end up to end of previous month
+
+      // Coverage and gaps - check which days have transactions
+      if (prospect) {
+        const daysWithTxns = new Set<string>();
+        for (const txn of prospect.transactions) {
+          if (txn.date && txn.date >= windowStart && txn.date <= windowEnd) {
+            daysWithTxns.add(txn.date);
+          }
+        }
+        result.coverage.days = daysWithTxns.size;
+
+        // Find gaps (sequences of 5+ days with no transactions)
+        let gapStart: Date | null = null;
+        let gapDays = 0;
+        const currentDate = new Date(start);
+
+        while (currentDate <= end) {
+          const dateStr = currentDate.toISOString().split('T')[0];
+          const dayOfWeek = currentDate.getDay();
+          const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+
+          if (!daysWithTxns.has(dateStr) && !isWeekend) {
+            if (!gapStart) gapStart = new Date(currentDate);
+            gapDays++;
+          } else {
+            if (gapDays >= 5 && gapStart) {
+              const gapEnd = new Date(currentDate);
+              gapEnd.setDate(gapEnd.getDate() - 1);
+              result.gaps.push(`${gapStart.toLocaleDateString('en-NZ', { day: 'numeric', month: 'short' })} - ${gapEnd.toLocaleDateString('en-NZ', { day: 'numeric', month: 'short' })}`);
+            }
+            gapStart = null;
+            gapDays = 0;
+          }
+          currentDate.setDate(currentDate.getDate() + 1);
+        }
+
+        // Check final gap
+        if (gapDays >= 5 && gapStart) {
+          result.gaps.push(`${gapStart.toLocaleDateString('en-NZ', { day: 'numeric', month: 'short' })} - ${end.toLocaleDateString('en-NZ', { day: 'numeric', month: 'short' })}`);
+        }
+      }
+
+      return result;
     }
 
-    // Month selector
-    const monthSelector = document.getElementById('month-selector') as HTMLSelectElement;
-    const prevMonthBtn = document.getElementById('prev-month');
-    const nextMonthBtn = document.getElementById('next-month');
+    // Render validation panel
+    function renderValidation() {
+      const validation = validateWindow();
 
-    monthSelector?.addEventListener('change', () => {
-      selectedMonth = monthSelector.value;
+      const durationEl = document.getElementById('val-duration')!;
+      const freshnessEl = document.getElementById('val-freshness')!;
+      const coverageEl = document.getElementById('val-coverage')!;
+      const gapsEl = document.getElementById('val-gaps')!;
+
+      // Duration
+      const durationIcon = validation.duration.ok
+        ? '<svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>'
+        : '<svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>';
+      durationEl.innerHTML = `${durationIcon} <span class="${validation.duration.ok ? 'text-slate-600' : 'text-amber-600'}">${validation.duration.months} months</span>`;
+
+      // Freshness
+      let freshnessText = '';
+      let freshnessIcon = '';
+      if (validation.freshness.monthsOld <= 0) {
+        freshnessText = 'Current';
+        freshnessIcon = '<svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>';
+      } else if (validation.freshness.ok) {
+        freshnessText = `${validation.freshness.monthsOld}mo old`;
+        freshnessIcon = '<svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>';
+      } else {
+        freshnessText = `${validation.freshness.monthsOld}mo old - TOO OLD`;
+        freshnessIcon = '<svg class="w-4 h-4 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>';
+      }
+      freshnessEl.innerHTML = `${freshnessIcon} <span class="${validation.freshness.ok ? 'text-slate-600' : 'text-rose-600'}">${freshnessText}</span>`;
+
+      // Coverage
+      const coveragePct = validation.coverage.totalDays > 0 ? Math.round(validation.coverage.days / validation.coverage.totalDays * 100) : 0;
+      coverageEl.innerHTML = `<span class="text-slate-600">${validation.coverage.days}/${validation.coverage.totalDays} days (${coveragePct}%)</span>`;
+
+      // Gaps
+      if (validation.gaps.length > 0) {
+        const gapIcon = '<svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>';
+        gapsEl.innerHTML = `${gapIcon} <span class="text-amber-600">Gaps: ${validation.gaps.join(', ')}</span>`;
+      } else {
+        gapsEl.innerHTML = '';
+      }
+    }
+
+    // Expense Window selectors
+    const windowStartInput = document.getElementById('window-start') as HTMLInputElement;
+    const windowEndInput = document.getElementById('window-end') as HTMLInputElement;
+
+    windowStartInput?.addEventListener('change', () => {
+      windowStart = windowStartInput.value;
       currentPage = 1;
+      renderValidation();
       renderAnalysis();
     });
 
-    prevMonthBtn?.addEventListener('click', () => {
-      const currentIndex = availableMonths.indexOf(selectedMonth);
-      if (currentIndex < availableMonths.length - 1) {
-        selectedMonth = availableMonths[currentIndex + 1];
-        monthSelector.value = selectedMonth;
-        currentPage = 1;
-        renderAnalysis();
-      }
-    });
-
-    nextMonthBtn?.addEventListener('click', () => {
-      const currentIndex = availableMonths.indexOf(selectedMonth);
-      if (currentIndex > 0) {
-        selectedMonth = availableMonths[currentIndex - 1];
-        monthSelector.value = selectedMonth;
-        currentPage = 1;
-        renderAnalysis();
-      } else if (selectedMonth !== 'all' && currentIndex === 0) {
-        selectedMonth = 'all';
-        monthSelector.value = 'all';
-        currentPage = 1;
-        renderAnalysis();
-      }
+    windowEndInput?.addEventListener('change', () => {
+      windowEnd = windowEndInput.value;
+      currentPage = 1;
+      renderValidation();
+      renderAnalysis();
     });
 
     // Tab switching (Input mode)
@@ -972,28 +1071,19 @@ import Layout from '../layouts/Layout.astro';
       document.getElementById('no-data')?.classList.add('hidden');
       document.getElementById('analysis-content')?.classList.remove('hidden');
 
-      // Update month selector
-      availableMonths = getAvailableMonths();
-      const monthSelector = document.getElementById('month-selector') as HTMLSelectElement;
-      if (monthSelector) {
-        const currentValue = monthSelector.value;
-        monthSelector.innerHTML = '<option value="all">All Months (' + availableMonths.length + ')</option>' +
-          availableMonths.map(m => `<option value="${m}">${formatMonth(m)}</option>`).join('');
-        // Restore selection if still valid
-        if (currentValue === 'all' || availableMonths.includes(currentValue)) {
-          monthSelector.value = currentValue;
-          selectedMonth = currentValue;
-        }
+      // Initialize expense window if not set
+      if (!windowStart || !windowEnd) {
+        const defaultWindow = getDefault3MonthWindow();
+        windowStart = defaultWindow.start;
+        windowEnd = defaultWindow.end;
+        if (windowStartInput) windowStartInput.value = windowStart;
+        if (windowEndInput) windowEndInput.value = windowEnd;
       }
 
-      // Update nav buttons
-      const currentIndex = availableMonths.indexOf(selectedMonth);
-      const prevBtn = document.getElementById('prev-month') as HTMLButtonElement;
-      const nextBtn = document.getElementById('next-month') as HTMLButtonElement;
-      if (prevBtn) prevBtn.disabled = selectedMonth === 'all' || currentIndex >= availableMonths.length - 1;
-      if (nextBtn) nextBtn.disabled = selectedMonth === 'all';
+      // Render validation panel
+      renderValidation();
 
-      // Get filtered transactions for this month
+      // Get filtered transactions for expense window
       const filteredTxns = getFilteredTransactions();
 
       // Calculate totals for filtered transactions (exclude transfers from expenses)
@@ -1003,34 +1093,28 @@ import Layout from '../layouts/Layout.astro';
 
       const analysis = analyzeProspect(prospect);
 
-      // Update period display
-      if (selectedMonth === 'all') {
-        document.getElementById('prospect-period')!.textContent = formatPeriod(analysis.period.start, analysis.period.end);
-      } else {
-        document.getElementById('prospect-period')!.textContent = formatMonth(selectedMonth);
-      }
+      // Update period display to show expense window
+      const startDisplay = new Date(windowStart).toLocaleDateString('en-NZ', { day: 'numeric', month: 'short', year: 'numeric' });
+      const endDisplay = new Date(windowEnd).toLocaleDateString('en-NZ', { day: 'numeric', month: 'short', year: 'numeric' });
+      document.getElementById('prospect-period')!.textContent = `${startDisplay} - ${endDisplay}`;
 
       // Summary cards - use filtered values
       document.getElementById('total-in')!.textContent = formatCurrency(moneyIn);
-      if (selectedMonth === 'all') {
-        document.getElementById('monthly-in')!.textContent = `${formatCurrency(moneyIn / analysis.period.months)}/month avg`;
-      } else {
-        document.getElementById('monthly-in')!.textContent = 'this month';
-      }
+
+      // Calculate months in window for averages
+      const windowDays = Math.round((new Date(windowEnd).getTime() - new Date(windowStart).getTime()) / (1000 * 60 * 60 * 24)) + 1;
+      const windowMonths = Math.max(1, windowDays / 30);
+      document.getElementById('monthly-in')!.textContent = `${formatCurrency(moneyIn / windowMonths)}/month avg`;
 
       // Show average monthly expenses
-      const avgMonthlyExpense = selectedMonth === 'all' ? moneyOut / analysis.period.months : moneyOut;
+      const avgMonthlyExpense = moneyOut / windowMonths;
       document.getElementById('avg-monthly-out')!.textContent = formatCurrency(avgMonthlyExpense);
 
       const net = moneyIn - moneyOut;
       const netEl = document.getElementById('net-position')!;
       netEl.textContent = formatCurrency(net, true);
       netEl.className = `text-2xl font-bold ${net >= 0 ? 'text-emerald-600' : 'text-rose-600'}`;
-      if (selectedMonth === 'all') {
-        document.getElementById('net-monthly')!.textContent = `${formatCurrency(net / analysis.period.months, true)}/month avg`;
-      } else {
-        document.getElementById('net-monthly')!.textContent = 'this month';
-      }
+      document.getElementById('net-monthly')!.textContent = `${formatCurrency(net / windowMonths, true)}/month avg`;
 
       document.getElementById('doc-count')!.textContent = prospect.documents.length.toString();
       document.getElementById('txn-count')!.textContent = `${expenseTxnCount} txns`;
@@ -1166,8 +1250,13 @@ import Layout from '../layouts/Layout.astro';
         const benchmark = BENCHMARKS[cat.category];
         let benchmarkIndicator = '';
 
+        // Calculate window months for averages
+        const windowDays = windowStart && windowEnd ?
+          Math.round((new Date(windowEnd).getTime() - new Date(windowStart).getTime()) / (1000 * 60 * 60 * 24)) + 1 : 90;
+        const windowMonths = Math.max(1, windowDays / 30);
+        const monthlyAvg = cat.total / windowMonths;
+
         if (benchmark && cat.category !== 'Account Transfers') {
-          const monthlyAvg = selectedMonth === 'all' ? cat.total / (analysis.period.months || 1) : cat.total;
           if (monthlyAvg > benchmark.high) {
             benchmarkIndicator = `<span class="text-xs text-rose-500 flex items-center gap-1">
               <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5.293 9.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 7.414V15a1 1 0 11-2 0V7.414L6.707 9.707a1 1 0 01-1.414 0z" clip-rule="evenodd"/></svg>
@@ -1181,7 +1270,6 @@ import Layout from '../layouts/Layout.astro';
           }
         }
 
-        const monthlyAvg = selectedMonth === 'all' ? cat.total / (analysis.period.months || 1) : cat.total;
         const isTransferCat = cat.category === 'Account Transfers';
 
         return `
@@ -1196,7 +1284,7 @@ import Layout from '../layouts/Layout.astro';
             <div class="flex items-end justify-between">
               <div>
                 <p class="text-lg font-semibold ${isTransferCat ? 'text-indigo-600' : 'text-slate-900'}">${formatCurrency(cat.total)}</p>
-                ${selectedMonth === 'all' ? `<p class="text-xs text-slate-500">${formatCurrency(monthlyAvg)}/month</p>` : ''}
+                <p class="text-xs text-slate-500">${formatCurrency(monthlyAvg)}/month</p>
               </div>
               ${benchmarkIndicator}
             </div>
@@ -1217,9 +1305,9 @@ import Layout from '../layouts/Layout.astro';
         .filter(a => a.severity === 'high' || a.severity === 'medium')
         .filter(a => !a.transactionId || !transferIds.has(a.transactionId))
         .filter(a => {
-          // If no transactionId (category-level anomaly), only show when viewing all data
-          if (!a.transactionId) return selectedMonth === 'all';
-          // If has transactionId, only show if transaction is in selected date range
+          // If no transactionId (category-level anomaly), show it
+          if (!a.transactionId) return true;
+          // If has transactionId, only show if transaction is in expense window
           return filteredTxnIds.has(a.transactionId);
         });
 
