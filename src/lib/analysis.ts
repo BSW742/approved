@@ -39,6 +39,7 @@ export interface ProspectAnalysis {
   spendingCategories: CategorySummary[];
   anomalies: ReturnType<typeof detectAnomalies>;
   accountSummaries: AccountSummary[];
+  associatedAccounts: AssociatedAccount[];
   monthlyBalances: { date: string; balance: number }[];
 }
 
@@ -49,6 +50,16 @@ export interface AccountSummary {
   closingBalance: number;
   daysInNegative: number;
   transactionCount: number;
+}
+
+export interface AssociatedAccount {
+  name: string;
+  accountNumber: string;
+  moneyIn: number;
+  moneyOut: number;
+  totalAmount: number;
+  transactionCount: number;
+  transactions: Transaction[];
 }
 
 export function analyzeProspect(prospect: Prospect): ProspectAnalysis {
@@ -105,6 +116,9 @@ export function analyzeProspect(prospect: Prospect): ProspectAnalysis {
   // Account summaries
   const accountSummaries = calculateAccountSummaries(accounts, transactions);
 
+  // Associated accounts (external accounts from transactions)
+  const associatedAccounts = extractAssociatedAccounts(transactions);
+
   // Monthly averages for anomaly detection
   const monthlyAverages: Record<string, number> = {};
   for (const cat of spendingCategories) {
@@ -140,6 +154,7 @@ export function analyzeProspect(prospect: Prospect): ProspectAnalysis {
     spendingCategories,
     anomalies,
     accountSummaries,
+    associatedAccounts,
     monthlyBalances
   };
 }
@@ -249,6 +264,128 @@ function calculateAccountSummaries(accounts: Account[], transactions: Transactio
   });
 }
 
+function extractAssociatedAccounts(transactions: Transaction[]): AssociatedAccount[] {
+  const accountMap = new Map<string, AssociatedAccount>();
+
+  for (const txn of transactions) {
+    // Skip internal transfers or unidentifiable transactions
+    const desc = txn.rawDescription || txn.description || '';
+
+    // Try to extract account number - multiple NZ formats
+    let accountNumber = '';
+
+    // NZ bank account formats:
+    // XX-XXXX-XXXXXXX-XX or XX-XXXX-XXXXXXX-XXX (with dashes)
+    const dashFormat = desc.match(/(\d{2}-\d{4}-\d{6,8}-\d{2,3})/);
+    if (dashFormat) {
+      accountNumber = dashFormat[1];
+    }
+
+    // Space-separated format: XX XXXX XXXXXXX XX
+    if (!accountNumber) {
+      const spaceFormat = desc.match(/(\d{2}\s+\d{4}\s+\d{6,8}\s+\d{2,3})/);
+      if (spaceFormat) {
+        accountNumber = spaceFormat[1].replace(/\s+/g, '-');
+      }
+    }
+
+    // Continuous digits (15-16 digits that look like account numbers, not card numbers)
+    if (!accountNumber) {
+      const continuousFormat = desc.match(/\b(\d{15,16})\b/);
+      if (continuousFormat && !desc.includes('***')) {
+        const num = continuousFormat[1];
+        // Format as XX-XXXX-XXXXXXX-XX
+        accountNumber = `${num.slice(0,2)}-${num.slice(2,6)}-${num.slice(6,13)}-${num.slice(13)}`;
+      }
+    }
+
+    // Partial account with asterisks (like 9554-1054-1022-6573)
+    if (!accountNumber) {
+      const partialFormat = desc.match(/(\d{4}-\d{4}-\d{4}-\d{4})/);
+      if (partialFormat) {
+        accountNumber = partialFormat[1];
+      }
+    }
+
+    // Try to extract name - usually after "TO " or "FROM " or at start
+    let name = '';
+
+    // Common patterns for extracting payee/payer names
+    const toMatch = desc.match(/(?:TO|PAYMENT TO|PAID TO|TFR TO)\s+([A-Z][A-Z\s&'-]+?)(?:\s+\d|$)/i);
+    const fromMatch = desc.match(/(?:FROM|RECEIVED FROM|TFR FROM)\s+([A-Z][A-Z\s&'-]+?)(?:\s+\d|$)/i);
+    const dcMatch = desc.match(/Direct Credit[:\s]+([A-Z][A-Z\s&'-]+?)(?:\s+\d|$)/i);
+    const ddMatch = desc.match(/Direct Debit[:\s]+([A-Z][A-Z\s&'-]+?)(?:\s+\d|$)/i);
+    const bpMatch = desc.match(/Bill Payment[:\s]+([A-Z][A-Z\s&'-]+?)(?:\s+\d|$)/i);
+    const apMatch = desc.match(/Automatic Payment[:\s]+([A-Z][A-Z\s&'-]+?)(?:\s+\d|$)/i);
+
+    if (toMatch) name = toMatch[1].trim();
+    else if (fromMatch) name = fromMatch[1].trim();
+    else if (dcMatch) name = dcMatch[1].trim();
+    else if (ddMatch) name = ddMatch[1].trim();
+    else if (bpMatch) name = bpMatch[1].trim();
+    else if (apMatch) name = apMatch[1].trim();
+
+    // If no name found, try to get first recognizable part
+    if (!name) {
+      // Get first word(s) that look like a name/company
+      const words = desc.split(/\s+/).filter(w => w.length > 2 && /^[A-Z]/.test(w));
+      if (words.length > 0) {
+        // Take up to 3 words that look like a name
+        name = words.slice(0, 3).join(' ').replace(/\d+$/, '').trim();
+      }
+    }
+
+    // Skip if we can't identify the account/name
+    if (!name && !accountNumber) continue;
+
+    // Skip common non-account entries
+    const skipPatterns = [
+      /^(EFTPOS|VISA|ATM|FEE|INTEREST|BALANCE)/i,
+      /^(OPENING|CLOSING|TOTAL)/i
+    ];
+    if (skipPatterns.some(p => p.test(name))) continue;
+
+    // Create key for grouping - prefer account number for uniqueness
+    const key = accountNumber || name.toUpperCase();
+
+    if (!accountMap.has(key)) {
+      accountMap.set(key, {
+        name: name || 'Unknown',
+        accountNumber,
+        moneyIn: 0,
+        moneyOut: 0,
+        totalAmount: 0,
+        transactionCount: 0,
+        transactions: []
+      });
+    }
+
+    const account = accountMap.get(key)!;
+    if (txn.amount > 0) {
+      account.moneyIn += txn.amount;
+    } else {
+      account.moneyOut += Math.abs(txn.amount);
+    }
+    account.totalAmount += Math.abs(txn.amount);
+    account.transactionCount++;
+    account.transactions.push(txn);
+
+    // Update name if we found a better one
+    if (name && account.name === 'Unknown') {
+      account.name = name;
+    }
+    // Update account number if we found one
+    if (accountNumber && !account.accountNumber) {
+      account.accountNumber = accountNumber;
+    }
+  }
+
+  // Convert to array and sort by total amount
+  return Array.from(accountMap.values())
+    .filter(a => a.totalAmount >= 100) // Filter out tiny accounts
+    .sort((a, b) => b.totalAmount - a.totalAmount);
+}
+
 function calculateMonthlyBalances(
   transactions: Transaction[],
   startDate: Date,
@@ -301,6 +438,7 @@ function getEmptyAnalysis(): ProspectAnalysis {
     spendingCategories: [],
     anomalies: [],
     accountSummaries: [],
+    associatedAccounts: [],
     monthlyBalances: []
   };
 }

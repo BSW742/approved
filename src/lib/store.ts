@@ -14,6 +14,9 @@ export interface Transaction {
   isTransfer?: boolean;
   isAnomalous?: boolean;
   anomalyReason?: string;
+  documentId?: string; // Reference to the PDF document
+  pageNumber?: number; // Page in the PDF where this transaction appears
+  textMatch?: string; // The exact text to find/highlight in the PDF
 }
 
 export interface Account {
@@ -153,4 +156,89 @@ function levenshtein(s1: string, s2: string): number {
     if (i > 0) costs[s2.length] = lastValue;
   }
   return costs[s2.length];
+}
+
+// IndexedDB for storing PDF files
+const DB_NAME = 'approved_pdfs';
+const DB_VERSION = 1;
+const STORE_NAME = 'pdfs';
+
+function openDB(): Promise<IDBDatabase> {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(DB_NAME, DB_VERSION);
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => resolve(request.result);
+    request.onupgradeneeded = (event) => {
+      const db = (event.target as IDBOpenDBRequest).result;
+      if (!db.objectStoreNames.contains(STORE_NAME)) {
+        db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+      }
+    };
+  });
+}
+
+export interface PageTextData {
+  pageNumber: number;
+  text: string;
+}
+
+export async function savePDF(documentId: string, data: ArrayBuffer, pageTexts?: PageTextData[]): Promise<void> {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, 'readwrite');
+    const store = tx.objectStore(STORE_NAME);
+    store.put({ id: documentId, data, pageTexts: pageTexts || [] });
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+export async function getPDF(documentId: string): Promise<ArrayBuffer | null> {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, 'readonly');
+    const store = tx.objectStore(STORE_NAME);
+    const request = store.get(documentId);
+    request.onsuccess = () => resolve(request.result?.data || null);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+export async function getPDFWithText(documentId: string): Promise<{ data: ArrayBuffer; pageTexts: PageTextData[] } | null> {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, 'readonly');
+    const store = tx.objectStore(STORE_NAME);
+    const request = store.get(documentId);
+    request.onsuccess = () => {
+      if (request.result) {
+        resolve({ data: request.result.data, pageTexts: request.result.pageTexts || [] });
+      } else {
+        resolve(null);
+      }
+    };
+    request.onerror = () => reject(request.error);
+  });
+}
+
+export async function deletePDF(documentId: string): Promise<void> {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, 'readwrite');
+    const store = tx.objectStore(STORE_NAME);
+    store.delete(documentId);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+export async function clearAllPDFs(): Promise<void> {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, 'readwrite');
+    const store = tx.objectStore(STORE_NAME);
+    store.clear();
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
 }

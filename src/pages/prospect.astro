@@ -17,7 +17,11 @@ import Layout from '../layouts/Layout.astro';
           <h1 id="prospect-name" class="text-3xl font-bold text-slate-900">Loading...</h1>
           <p id="prospect-period" class="text-slate-500 mt-1"></p>
         </div>
-        <div class="flex gap-3">
+        <div class="flex items-center gap-4">
+          <label class="flex items-center gap-2 text-sm text-slate-600 cursor-pointer select-none">
+            <input type="checkbox" id="expenses-only" class="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500" checked />
+            <span>Expenses only</span>
+          </label>
           <label class="bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-5 py-2.5 rounded-lg font-medium hover:from-emerald-600 hover:to-teal-600 transition-all shadow-sm hover:shadow cursor-pointer flex items-center gap-2">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
@@ -31,9 +35,18 @@ import Layout from '../layouts/Layout.astro';
 
     <!-- Upload Progress -->
     <div id="upload-progress" class="hidden mb-6 bg-emerald-50 border border-emerald-200 rounded-xl p-4">
-      <div class="flex items-center gap-3">
-        <div class="animate-spin w-5 h-5 border-2 border-emerald-500 border-t-transparent rounded-full"></div>
-        <span class="text-emerald-700 font-medium">Processing PDF...</span>
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="animate-spin w-5 h-5 border-2 border-emerald-500 border-t-transparent rounded-full"></div>
+          <div>
+            <span id="upload-status" class="text-emerald-700 font-medium">Processing...</span>
+            <p id="upload-detail" class="text-emerald-600 text-sm"></p>
+          </div>
+        </div>
+        <span id="upload-count" class="text-emerald-600 text-sm font-medium"></span>
+      </div>
+      <div id="upload-progress-bar" class="mt-3 h-2 bg-emerald-100 rounded-full overflow-hidden">
+        <div id="upload-progress-fill" class="h-full bg-emerald-500 transition-all duration-300" style="width: 0%"></div>
       </div>
     </div>
 
@@ -59,61 +72,84 @@ import Layout from '../layouts/Layout.astro';
 
     <!-- Analysis Content -->
     <div id="analysis-content" class="hidden space-y-6">
-      <!-- Summary Cards -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div class="bg-white rounded-xl border border-slate-200 p-6">
-          <p class="text-sm text-slate-500 mb-1">Money In</p>
-          <p id="total-in" class="text-2xl font-bold text-emerald-600">$0.00</p>
-          <p id="monthly-in" class="text-xs text-slate-400 mt-1"></p>
-        </div>
-        <div class="bg-white rounded-xl border border-slate-200 p-6">
-          <p class="text-sm text-slate-500 mb-1">Money Out</p>
-          <p id="total-out" class="text-2xl font-bold text-rose-600">$0.00</p>
-          <p id="monthly-out" class="text-xs text-slate-400 mt-1"></p>
-        </div>
-        <div class="bg-white rounded-xl border border-slate-200 p-6">
-          <p class="text-sm text-slate-500 mb-1">Net Position</p>
-          <p id="net-position" class="text-2xl font-bold">$0.00</p>
-          <p id="net-monthly" class="text-xs text-slate-400 mt-1"></p>
-        </div>
-        <div class="bg-white rounded-xl border border-slate-200 p-6">
-          <p class="text-sm text-slate-500 mb-1">Documents</p>
-          <p id="doc-count" class="text-2xl font-bold text-slate-700">0</p>
-          <p id="txn-count" class="text-xs text-slate-400 mt-1"></p>
+      <!-- Summary Bar: Month selector, Money Out, Documents -->
+      <div class="bg-white rounded-xl border border-slate-200 p-4">
+        <div class="flex items-center justify-between flex-wrap gap-4">
+          <!-- Month Selector -->
+          <div class="flex items-center gap-3">
+            <button id="prev-month" class="p-2 rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+            <select id="month-selector" class="px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none text-sm font-medium min-w-[160px]">
+              <option value="all">All Months</option>
+            </select>
+            <button id="next-month" class="p-2 rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          </div>
+
+          <!-- Money Out -->
+          <div class="flex items-center gap-3">
+            <div class="text-right">
+              <p class="text-xs text-slate-500 uppercase tracking-wide">Total Expenses</p>
+              <p id="total-out" class="text-2xl font-bold text-rose-600">$0.00</p>
+            </div>
+            <p id="monthly-out" class="text-xs text-slate-400 hidden sm:block"></p>
+          </div>
+
+          <!-- Documents -->
+          <div class="flex items-center gap-2 text-slate-500">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            <span id="doc-count" class="font-semibold text-slate-700">0</span>
+            <span class="text-sm">docs</span>
+            <span class="text-slate-300 mx-1">|</span>
+            <span id="txn-count" class="text-sm text-slate-500"></span>
+          </div>
         </div>
       </div>
 
-      <!-- Anomalies Alert -->
-      <div id="anomalies-alert" class="hidden bg-amber-50 border border-amber-200 rounded-xl p-6">
-        <div class="flex items-start gap-4">
-          <div class="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center flex-shrink-0">
-            <svg class="w-5 h-5 text-amber-600" fill="currentColor" viewBox="0 0 20 20">
-              <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
-            </svg>
-          </div>
-          <div class="flex-1">
-            <h3 class="font-semibold text-amber-800">Items Requiring Attention</h3>
-            <div id="anomalies-list" class="mt-2 space-y-2 text-sm text-amber-700"></div>
-          </div>
+      <!-- Hidden income cards (kept for data but not displayed by default) -->
+      <div id="summary-cards" class="hidden">
+        <div id="card-money-in" class="income-section">
+          <p id="total-in" class="hidden">$0.00</p>
+          <p id="monthly-in" class="hidden"></p>
+        </div>
+        <div id="card-net" class="income-section">
+          <p id="net-position" class="hidden">$0.00</p>
+          <p id="net-monthly" class="hidden"></p>
         </div>
       </div>
 
       <!-- Tabs -->
-      <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+      <div class="bg-white rounded-xl border border-slate-200">
         <div class="border-b border-slate-200 overflow-x-auto">
           <nav class="flex -mb-px min-w-max">
-            <button data-tab="overview" class="tab-btn active px-6 py-4 text-sm font-medium border-b-2 border-emerald-500 text-emerald-600 whitespace-nowrap">Overview</button>
-            <button data-tab="categories" class="tab-btn px-6 py-4 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700 whitespace-nowrap">Spending Categories</button>
-            <button data-tab="transactions" class="tab-btn px-6 py-4 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700 whitespace-nowrap">Transactions</button>
+            <button data-tab="transactions" class="tab-btn active px-6 py-4 text-sm font-medium border-b-2 border-emerald-500 text-emerald-600 whitespace-nowrap">Transactions</button>
+            <button data-tab="categories" class="tab-btn px-6 py-4 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700 whitespace-nowrap">Categories</button>
             <button data-tab="documents" class="tab-btn px-6 py-4 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700 whitespace-nowrap">Documents</button>
+            <button data-tab="overview" class="tab-btn px-6 py-4 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700 whitespace-nowrap">Overview</button>
+            <button data-tab="transfers" class="tab-btn px-6 py-4 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700 whitespace-nowrap">Account Transfers</button>
+            <button data-tab="search" class="tab-btn px-6 py-4 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700 whitespace-nowrap flex items-center gap-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              Search Docs
+            </button>
+            <button data-tab="accounts" class="tab-btn px-6 py-4 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700 whitespace-nowrap">Accounts</button>
           </nav>
         </div>
 
         <!-- Overview Tab -->
-        <div id="tab-overview" class="tab-content p-6">
-          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div id="tab-overview" class="tab-content hidden p-6">
+          <div id="overview-grid" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <!-- Money In -->
-            <div>
+            <div id="money-in-section" class="income-section">
               <h3 class="font-semibold text-slate-700 mb-4">Money In</h3>
               <div class="space-y-3">
                 <div class="flex justify-between items-center py-2 border-b border-slate-100">
@@ -158,7 +194,7 @@ import Layout from '../layouts/Layout.astro';
         </div>
 
         <!-- Transactions Tab -->
-        <div id="tab-transactions" class="tab-content hidden p-6">
+        <div id="tab-transactions" class="tab-content p-6">
           <div class="mb-4 flex flex-col sm:flex-row gap-4">
             <input type="text" id="txn-search" placeholder="Search transactions..." class="flex-1 px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none" />
             <select id="txn-category-filter" class="px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none">
@@ -173,6 +209,8 @@ import Layout from '../layouts/Layout.astro';
                   <th class="pb-3 font-medium">Description</th>
                   <th class="pb-3 font-medium">Category</th>
                   <th class="pb-3 font-medium text-right">Amount</th>
+                  <th class="pb-3 font-medium text-center w-16"></th>
+                  <th class="pb-3 font-medium text-center w-16"></th>
                 </tr>
               </thead>
               <tbody id="transactions-table" class="text-sm">
@@ -185,16 +223,120 @@ import Layout from '../layouts/Layout.astro';
 
         <!-- Documents Tab -->
         <div id="tab-documents" class="tab-content hidden p-6">
+          <div class="flex justify-between items-center mb-4">
+            <p class="text-sm text-slate-500">Uploaded bank statements</p>
+            <button id="clear-all-btn" class="text-xs px-3 py-1.5 rounded border border-rose-200 text-rose-600 hover:bg-rose-50 transition-colors">
+              Clear All & Reset
+            </button>
+          </div>
           <div id="documents-list" class="space-y-3">
             <!-- Populated by JS -->
+          </div>
+        </div>
+
+        <!-- Account Transfers Tab -->
+        <div id="tab-transfers" class="tab-content hidden p-6">
+          <div class="mb-4">
+            <p class="text-sm text-slate-500">Transactions marked as account transfers are excluded from expense calculations.</p>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full min-w-[600px]">
+              <thead>
+                <tr class="text-left text-sm text-slate-500 border-b border-slate-200">
+                  <th class="pb-3 font-medium">Date</th>
+                  <th class="pb-3 font-medium">Description</th>
+                  <th class="pb-3 font-medium text-right">Amount</th>
+                  <th class="pb-3 font-medium text-center w-24">Action</th>
+                </tr>
+              </thead>
+              <tbody id="transfers-table" class="text-sm">
+                <!-- Populated by JS -->
+              </tbody>
+            </table>
+          </div>
+          <div id="no-transfers" class="hidden text-center py-8 text-slate-400">
+            No account transfers marked yet. Mark transactions as transfers from the Transactions tab.
+          </div>
+        </div>
+
+        <!-- Search Tab -->
+        <div id="tab-search" class="tab-content hidden p-6">
+          <div class="max-w-2xl mx-auto">
+            <div class="mb-6">
+              <div class="relative">
+                <input type="text" id="doc-search" placeholder="Search in all documents..." class="w-full px-4 py-3 pl-12 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none text-lg" />
+                <svg class="w-5 h-5 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
+              <p class="text-sm text-slate-500 mt-2">Search for any text in your uploaded bank statements</p>
+            </div>
+            <div id="search-results" class="space-y-2">
+              <!-- Populated by JS -->
+            </div>
+            <div id="no-search-results" class="hidden text-center py-12 text-slate-400">
+              <svg class="w-12 h-12 mx-auto mb-3 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              <p>No results found</p>
+            </div>
+            <div id="search-empty" class="text-center py-12 text-slate-400">
+              <svg class="w-12 h-12 mx-auto mb-3 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              <p>Type to search your documents</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Accounts Tab -->
+        <div id="tab-accounts" class="tab-content hidden p-6">
+          <div class="flex items-center justify-between mb-6">
+            <div>
+              <h3 class="text-lg font-semibold text-slate-800">Associated Accounts</h3>
+              <p class="text-sm text-slate-500">External accounts with money flowing in or out</p>
+            </div>
+            <button id="toggle-associated" class="hidden text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center gap-1">
+              <span id="toggle-associated-text">Show All</span>
+              <svg id="toggle-associated-icon" class="w-4 h-4 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+          </div>
+          <div id="associated-accounts-list" class="space-y-2">
+            <!-- Populated by JS -->
+          </div>
+          <div id="associated-accounts-hidden" class="hidden space-y-2 mt-2 pt-2 border-t border-slate-200">
+            <!-- Hidden accounts (< $1000) populated by JS -->
+          </div>
+          <div id="no-accounts" class="hidden text-center py-12 text-slate-400">
+            <svg class="w-12 h-12 mx-auto mb-3 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            <p>No associated accounts detected</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Anomalies Alert -->
+      <div id="anomalies-alert" class="hidden bg-amber-50 border border-amber-200 rounded-xl p-6">
+        <div class="flex items-start gap-4">
+          <div class="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center flex-shrink-0">
+            <svg class="w-5 h-5 text-amber-600" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+            </svg>
+          </div>
+          <div class="flex-1">
+            <h3 class="font-semibold text-amber-800">Items Requiring Attention</h3>
+            <div id="anomalies-list" class="mt-2 space-y-2 text-sm text-amber-700"></div>
           </div>
         </div>
       </div>
     </div>
 
     <!-- Category Detail Modal -->
-    <div id="category-modal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-      <div class="bg-white rounded-xl max-w-3xl w-full max-h-[80vh] overflow-hidden">
+    <div id="category-modal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 overflow-y-auto">
+      <div class="bg-white rounded-xl max-w-3xl w-full max-h-[90vh] flex flex-col">
         <div class="p-6 border-b border-slate-200 flex items-center justify-between">
           <h3 id="modal-title" class="text-xl font-semibold text-slate-900"></h3>
           <button id="close-modal" class="text-slate-400 hover:text-slate-600">
@@ -203,7 +345,7 @@ import Layout from '../layouts/Layout.astro';
             </svg>
           </button>
         </div>
-        <div class="p-6 overflow-y-auto max-h-[60vh]">
+        <div class="p-6 overflow-y-auto flex-1">
           <div id="modal-summary" class="mb-6 grid grid-cols-3 gap-4 text-center"></div>
           <table class="w-full text-sm">
             <thead>
@@ -218,18 +360,65 @@ import Layout from '../layouts/Layout.astro';
         </div>
       </div>
     </div>
+
+    <!-- PDF Viewer Modal -->
+    <div id="pdf-modal" class="hidden fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+      <div class="bg-white rounded-2xl w-full max-w-[45rem] shadow-2xl flex flex-col animate-fade-in" style="height: 50vh;">
+        <!-- Header -->
+        <div class="p-4 border-b border-slate-200 flex items-center justify-between bg-gradient-to-r from-emerald-50 to-teal-50 rounded-t-2xl">
+          <div>
+            <h3 id="pdf-modal-title" class="font-semibold text-slate-900">Transaction Detail</h3>
+            <p id="pdf-modal-subtitle" class="text-sm text-slate-500"></p>
+          </div>
+          <button id="close-pdf-modal" class="w-10 h-10 rounded-full bg-white shadow-sm border border-slate-200 flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition-all">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <!-- PDF Container -->
+        <div id="pdf-container" class="flex-1 overflow-auto bg-slate-100 relative">
+          <div id="pdf-loading" class="absolute inset-0 flex items-center justify-center bg-slate-100">
+            <div class="text-center">
+              <div class="animate-spin w-8 h-8 border-3 border-emerald-500 border-t-transparent rounded-full mx-auto mb-3"></div>
+              <p class="text-slate-500 text-sm">Loading document...</p>
+            </div>
+          </div>
+          <canvas id="pdf-canvas" class="mx-auto"></canvas>
+        </div>
+        <!-- Footer with page info -->
+        <div class="p-3 border-t border-slate-200 flex items-center justify-between bg-slate-50 rounded-b-2xl">
+          <span id="pdf-page-info" class="text-sm text-slate-500"></span>
+          <div class="flex items-center gap-2">
+            <button id="pdf-zoom-out" class="p-2 rounded-lg border border-slate-200 hover:bg-white text-slate-600">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4" />
+              </svg>
+            </button>
+            <span id="pdf-zoom-level" class="text-sm text-slate-600 w-12 text-center">100%</span>
+            <button id="pdf-zoom-in" class="p-2 rounded-lg border border-slate-200 hover:bg-white text-slate-600">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
+  <script is:inline src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script>
-    import * as pdfjsLib from 'pdfjs-dist';
-    import { getProspect, saveProspect, mergeTransactions, generateId } from '../lib/store';
-    import type { Prospect } from '../lib/store';
+    import { getProspect, saveProspect, mergeTransactions, generateId, savePDF, getPDF, getPDFWithText, clearAllPDFs } from '../lib/store';
+    import type { Prospect, PageTextData } from '../lib/store';
     import { analyzeProspect, formatCurrency, formatDate, formatPeriod } from '../lib/analysis';
     import { detectBank, parseANZStatement, parseWestpacStatement, parseGenericStatement } from '../lib/pdfParser';
+    import type { PageText } from '../lib/pdfParser';
     import { CATEGORY_COLORS, BENCHMARKS } from '../lib/categorize';
 
-    // Set up PDF.js worker
-    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.worker.min.mjs';
+    // Get PDF.js from global (loaded via CDN above)
+    const pdfjsLib = (window as any).pdfjsLib;
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
     // Get prospect ID from URL
     const urlParams = new URLSearchParams(window.location.search);
@@ -237,10 +426,74 @@ import Layout from '../layouts/Layout.astro';
     let prospect: Prospect | undefined = getProspect(prospectId);
     let currentPage = 1;
     const pageSize = 25;
+    let selectedMonth = 'all'; // 'all' or 'YYYY-MM'
+    let availableMonths: string[] = [];
 
     if (!prospect) {
       window.location.href = '/';
     }
+
+    // Get unique months from transactions
+    function getAvailableMonths(): string[] {
+      if (!prospect) return [];
+      const months = new Set<string>();
+      for (const txn of prospect.transactions) {
+        if (txn.date) {
+          months.add(txn.date.substring(0, 7)); // YYYY-MM
+        }
+      }
+      return Array.from(months).sort().reverse(); // Most recent first
+    }
+
+    // Filter transactions by selected month
+    function getFilteredTransactions() {
+      if (!prospect) return [];
+      if (selectedMonth === 'all') return prospect.transactions;
+      return prospect.transactions.filter(t => t.date?.startsWith(selectedMonth));
+    }
+
+    // Format month for display
+    function formatMonth(monthStr: string): string {
+      const [year, month] = monthStr.split('-');
+      const date = new Date(parseInt(year), parseInt(month) - 1);
+      return date.toLocaleDateString('en-NZ', { month: 'long', year: 'numeric' });
+    }
+
+    // Month selector
+    const monthSelector = document.getElementById('month-selector') as HTMLSelectElement;
+    const prevMonthBtn = document.getElementById('prev-month');
+    const nextMonthBtn = document.getElementById('next-month');
+
+    monthSelector?.addEventListener('change', () => {
+      selectedMonth = monthSelector.value;
+      currentPage = 1;
+      renderAnalysis();
+    });
+
+    prevMonthBtn?.addEventListener('click', () => {
+      const currentIndex = availableMonths.indexOf(selectedMonth);
+      if (currentIndex < availableMonths.length - 1) {
+        selectedMonth = availableMonths[currentIndex + 1];
+        monthSelector.value = selectedMonth;
+        currentPage = 1;
+        renderAnalysis();
+      }
+    });
+
+    nextMonthBtn?.addEventListener('click', () => {
+      const currentIndex = availableMonths.indexOf(selectedMonth);
+      if (currentIndex > 0) {
+        selectedMonth = availableMonths[currentIndex - 1];
+        monthSelector.value = selectedMonth;
+        currentPage = 1;
+        renderAnalysis();
+      } else if (selectedMonth !== 'all' && currentIndex === 0) {
+        selectedMonth = 'all';
+        monthSelector.value = 'all';
+        currentPage = 1;
+        renderAnalysis();
+      }
+    });
 
     // Tab switching
     document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -258,52 +511,199 @@ import Layout from '../layouts/Layout.astro';
       });
     });
 
+    // Expenses only toggle
+    let expensesOnly = true;
+    const expensesToggle = document.getElementById('expenses-only') as HTMLInputElement;
+
+    function applyExpensesFilter() {
+      const incomeSections = document.querySelectorAll('.income-section');
+      const summaryCards = document.getElementById('summary-cards');
+      const overviewGrid = document.getElementById('overview-grid');
+
+      incomeSections.forEach(el => {
+        if (expensesOnly) {
+          el.classList.add('hidden');
+        } else {
+          el.classList.remove('hidden');
+        }
+      });
+
+      // Adjust grid columns when hiding income cards
+      if (summaryCards) {
+        if (expensesOnly) {
+          summaryCards.classList.remove('lg:grid-cols-4');
+          summaryCards.classList.add('lg:grid-cols-2');
+        } else {
+          summaryCards.classList.remove('lg:grid-cols-2');
+          summaryCards.classList.add('lg:grid-cols-4');
+        }
+      }
+
+      // Make key indicators full width when money in is hidden
+      if (overviewGrid) {
+        if (expensesOnly) {
+          overviewGrid.classList.remove('lg:grid-cols-2');
+          overviewGrid.classList.add('lg:grid-cols-1');
+        } else {
+          overviewGrid.classList.remove('lg:grid-cols-1');
+          overviewGrid.classList.add('lg:grid-cols-2');
+        }
+      }
+
+      // Hide income in associated accounts
+      document.querySelectorAll('.assoc-income').forEach(el => {
+        (el as HTMLElement).style.display = expensesOnly ? 'none' : '';
+      });
+    }
+
+    expensesToggle?.addEventListener('change', () => {
+      expensesOnly = expensesToggle.checked;
+      applyExpensesFilter();
+    });
+
+    // Apply on load
+    applyExpensesFilter();
+
+    // Associated accounts toggle
+    let associatedExpanded = false;
+    document.getElementById('toggle-associated')?.addEventListener('click', () => {
+      associatedExpanded = !associatedExpanded;
+      const hiddenSection = document.getElementById('associated-accounts-hidden');
+      const toggleText = document.getElementById('toggle-associated-text');
+      const toggleIcon = document.getElementById('toggle-associated-icon');
+
+      if (associatedExpanded) {
+        hiddenSection?.classList.remove('hidden');
+        if (toggleText) toggleText.textContent = 'Hide';
+        toggleIcon?.classList.add('rotate-180');
+      } else {
+        hiddenSection?.classList.add('hidden');
+        const count = hiddenSection?.children.length || 0;
+        if (toggleText) toggleText.textContent = `Show ${count} more (< $1,000)`;
+        toggleIcon?.classList.remove('rotate-180');
+      }
+    });
+
     // PDF Upload handling
     document.querySelectorAll('#pdf-upload, .pdf-upload-trigger').forEach(input => {
       input.addEventListener('change', async (e) => {
         const files = (e.target as HTMLInputElement).files;
-        if (!files || !prospect) return;
+        if (!files || files.length === 0 || !prospect) return;
 
         const progressEl = document.getElementById('upload-progress');
-        progressEl?.classList.remove('hidden');
+        const statusEl = document.getElementById('upload-status');
+        const detailEl = document.getElementById('upload-detail');
+        const countEl = document.getElementById('upload-count');
+        const progressFill = document.getElementById('upload-progress-fill');
 
-        for (const file of Array.from(files)) {
-          await processPDF(file);
+        progressEl?.classList.remove('hidden');
+        const fileArray = Array.from(files);
+        const total = fileArray.length;
+        let processed = 0;
+        let totalTxns = 0;
+
+        for (const file of fileArray) {
+          processed++;
+          if (statusEl) statusEl.textContent = `Processing ${file.name}`;
+          if (detailEl) detailEl.textContent = 'Reading PDF...';
+          if (countEl) countEl.textContent = `${processed} of ${total}`;
+          if (progressFill) progressFill.style.width = `${(processed / total) * 100}%`;
+
+          const txnCount = await processPDF(file, (stage: string) => {
+            if (detailEl) detailEl.textContent = stage;
+          });
+          totalTxns += txnCount;
         }
 
-        progressEl?.classList.add('hidden');
+        console.log('Upload complete. Total transactions:', totalTxns, 'Prospect transactions:', prospect.transactions.length);
+
+        if (totalTxns > 0) {
+          if (statusEl) statusEl.textContent = 'Complete!';
+          if (detailEl) detailEl.textContent = `Imported ${totalTxns} transactions from ${total} file${total > 1 ? 's' : ''}`;
+        } else {
+          if (statusEl) statusEl.textContent = 'No transactions found';
+          if (detailEl) detailEl.textContent = `Could not extract transactions from ${total} file${total > 1 ? 's' : ''}. Check the PDF format.`;
+        }
+
+        // Keep visible longer if no transactions
+        setTimeout(() => {
+          progressEl?.classList.add('hidden');
+          if (progressFill) progressFill.style.width = '0%';
+        }, totalTxns > 0 ? 1500 : 3000);
+
         (e.target as HTMLInputElement).value = '';
         renderAnalysis();
+        console.log('After renderAnalysis. Prospect:', prospect);
       });
     });
 
-    async function processPDF(file: File) {
-      if (!prospect) return;
+    async function processPDF(file: File, onProgress?: (stage: string) => void): Promise<number> {
+      if (!prospect) return 0;
 
       try {
+        console.log('Processing PDF:', file.name);
+        onProgress?.('Loading file...');
         const arrayBuffer = await file.arrayBuffer();
+        console.log('Got array buffer, size:', arrayBuffer.byteLength);
+
+        // Clone the ArrayBuffer before PDF.js uses it (PDF.js may detach the original)
+        const arrayBufferCopy = arrayBuffer.slice(0);
+
+        // Generate document ID upfront
+        const documentId = generateId();
+
+        onProgress?.('Opening PDF...');
         const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        console.log('PDF loaded, pages:', pdf.numPages);
 
         let fullText = '';
+        const pageTexts: PageText[] = [];
+
         for (let i = 1; i <= pdf.numPages; i++) {
+          onProgress?.(`Extracting page ${i} of ${pdf.numPages}...`);
           const page = await pdf.getPage(i);
           const textContent = await page.getTextContent();
           const pageText = textContent.items.map((item: any) => item.str).join(' ');
           fullText += pageText + '\n';
+          pageTexts.push({ pageNumber: i, text: pageText });
         }
+        console.log('Text extracted, length:', fullText.length);
 
+        // Save PDF to IndexedDB with text content for searching
+        onProgress?.('Saving document...');
+        await savePDF(documentId, arrayBufferCopy, pageTexts);
+
+        onProgress?.('Detecting bank format...');
         const bank = detectBank(fullText);
+        console.log('Detected bank:', bank);
+
+        onProgress?.('Parsing transactions...');
         let result;
 
         switch (bank) {
           case 'ANZ':
-            result = parseANZStatement(fullText, file.name);
+            result = parseANZStatement(fullText, file.name, documentId, pageTexts);
             break;
           case 'Westpac':
-            result = parseWestpacStatement(fullText, file.name);
+            result = parseWestpacStatement(fullText, file.name, documentId, pageTexts);
             break;
           default:
-            result = parseGenericStatement(fullText, file.name, bank);
+            result = parseGenericStatement(fullText, file.name, bank, documentId, pageTexts);
+        }
+
+        // Override the document ID with our pre-generated one
+        result.document.id = documentId;
+
+        console.log('Parsed result:', {
+          transactions: result.transactions.length,
+          accounts: result.accounts.length,
+          document: result.document
+        });
+
+        if (result.transactions.length === 0) {
+          console.warn('No transactions parsed! First 1000 chars of text:', fullText.substring(0, 1000));
+        } else {
+          console.log('Sample transactions:', result.transactions.slice(0, 3));
         }
 
         // Merge transactions
@@ -321,10 +721,27 @@ import Layout from '../layouts/Layout.astro';
         prospect.documents.push(result.document);
 
         saveProspect(prospect);
+        return result.transactions.length;
 
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error processing PDF:', error);
-        alert(`Error processing ${file.name}. Please ensure it's a valid bank statement PDF.`);
+        console.error('Error stack:', error?.stack);
+        console.error('Error message:', error?.message);
+
+        // If it's a deserialization error, clear corrupted IndexedDB data
+        if (error?.message?.includes('deserialize')) {
+          console.log('Clearing corrupted IndexedDB data...');
+          try {
+            await clearAllPDFs();
+            alert(`Database cleared. Please try uploading ${file.name} again.`);
+          } catch (e) {
+            console.error('Error clearing database:', e);
+            alert(`Error processing ${file.name}. Please clear your browser data and try again.`);
+          }
+        } else {
+          alert(`Error processing ${file.name}: ${error?.message || 'Unknown error'}. Check console for details.`);
+        }
+        return 0;
       }
     }
 
@@ -344,25 +761,73 @@ import Layout from '../layouts/Layout.astro';
       document.getElementById('no-data')?.classList.add('hidden');
       document.getElementById('analysis-content')?.classList.remove('hidden');
 
+      // Update month selector
+      availableMonths = getAvailableMonths();
+      const monthSelector = document.getElementById('month-selector') as HTMLSelectElement;
+      if (monthSelector) {
+        const currentValue = monthSelector.value;
+        monthSelector.innerHTML = '<option value="all">All Months (' + availableMonths.length + ')</option>' +
+          availableMonths.map(m => `<option value="${m}">${formatMonth(m)}</option>`).join('');
+        // Restore selection if still valid
+        if (currentValue === 'all' || availableMonths.includes(currentValue)) {
+          monthSelector.value = currentValue;
+          selectedMonth = currentValue;
+        }
+      }
+
+      // Update nav buttons
+      const currentIndex = availableMonths.indexOf(selectedMonth);
+      const prevBtn = document.getElementById('prev-month') as HTMLButtonElement;
+      const nextBtn = document.getElementById('next-month') as HTMLButtonElement;
+      if (prevBtn) prevBtn.disabled = selectedMonth === 'all' || currentIndex >= availableMonths.length - 1;
+      if (nextBtn) nextBtn.disabled = selectedMonth === 'all';
+
+      // Get filtered transactions for this month
+      const filteredTxns = getFilteredTransactions();
+
+      // Calculate totals for filtered transactions (exclude transfers from expenses)
+      const moneyIn = filteredTxns.filter(t => t.amount > 0 && !t.isTransfer).reduce((sum, t) => sum + t.amount, 0);
+      const moneyOut = filteredTxns.filter(t => t.amount < 0 && !t.isTransfer).reduce((sum, t) => sum + Math.abs(t.amount), 0);
+      const expenseTxnCount = filteredTxns.filter(t => !t.isTransfer).length;
+
       const analysis = analyzeProspect(prospect);
 
-      // Update period
-      document.getElementById('prospect-period')!.textContent = formatPeriod(analysis.period.start, analysis.period.end);
+      // Update period display
+      if (selectedMonth === 'all') {
+        document.getElementById('prospect-period')!.textContent = formatPeriod(analysis.period.start, analysis.period.end);
+      } else {
+        document.getElementById('prospect-period')!.textContent = formatMonth(selectedMonth);
+      }
 
-      // Summary cards
-      document.getElementById('total-in')!.textContent = formatCurrency(analysis.moneyIn);
-      document.getElementById('monthly-in')!.textContent = `${formatCurrency(analysis.moneyIn / analysis.period.months)}/month`;
-      document.getElementById('total-out')!.textContent = formatCurrency(analysis.moneyOut);
-      document.getElementById('monthly-out')!.textContent = `${formatCurrency(analysis.moneyOut / analysis.period.months)}/month`;
+      // Summary cards - use filtered values
+      document.getElementById('total-in')!.textContent = formatCurrency(moneyIn);
+      if (selectedMonth === 'all') {
+        document.getElementById('monthly-in')!.textContent = `${formatCurrency(moneyIn / analysis.period.months)}/month avg`;
+      } else {
+        document.getElementById('monthly-in')!.textContent = 'this month';
+      }
 
-      const net = analysis.moneyIn - analysis.moneyOut;
+      document.getElementById('total-out')!.textContent = formatCurrency(moneyOut);
+      const monthlyOutEl = document.getElementById('monthly-out')!;
+      if (selectedMonth === 'all' && analysis.period.months > 1) {
+        monthlyOutEl.textContent = `(${formatCurrency(moneyOut / analysis.period.months)}/mo avg)`;
+        monthlyOutEl.classList.remove('hidden');
+      } else {
+        monthlyOutEl.classList.add('hidden');
+      }
+
+      const net = moneyIn - moneyOut;
       const netEl = document.getElementById('net-position')!;
       netEl.textContent = formatCurrency(net, true);
       netEl.className = `text-2xl font-bold ${net >= 0 ? 'text-emerald-600' : 'text-rose-600'}`;
-      document.getElementById('net-monthly')!.textContent = `${formatCurrency(net / analysis.period.months, true)}/month`;
+      if (selectedMonth === 'all') {
+        document.getElementById('net-monthly')!.textContent = `${formatCurrency(net / analysis.period.months, true)}/month avg`;
+      } else {
+        document.getElementById('net-monthly')!.textContent = 'this month';
+      }
 
       document.getElementById('doc-count')!.textContent = prospect.documents.length.toString();
-      document.getElementById('txn-count')!.textContent = `${prospect.transactions.length} transactions`;
+      document.getElementById('txn-count')!.textContent = `${expenseTxnCount} txns`;
 
       // Money In section
       document.getElementById('salary-total')!.textContent = formatCurrency(analysis.moneyInSummary.salary.total);
@@ -391,6 +856,44 @@ import Layout from '../layouts/Layout.astro';
         </div>
       `).join('');
 
+      // Associated Accounts
+      const significantAccounts = analysis.associatedAccounts.filter(a => a.totalAmount >= 1000);
+      const minorAccounts = analysis.associatedAccounts.filter(a => a.totalAmount < 1000);
+
+      if (analysis.associatedAccounts.length > 0) {
+        document.getElementById('no-accounts')?.classList.add('hidden');
+
+        const renderAccountRow = (acc: typeof analysis.associatedAccounts[0]) => `
+          <div class="flex items-center justify-between py-3 px-4 bg-slate-50 rounded-lg border border-slate-100 hover:border-blue-200 transition-colors">
+            <div class="flex items-center gap-3 flex-1 min-w-0">
+              <span class="font-medium text-slate-800 truncate">${acc.name}</span>
+              ${acc.accountNumber ? `<span class="text-slate-500 font-mono">${acc.accountNumber}</span>` : ''}
+            </div>
+            <div class="flex items-center gap-6">
+              <div class="flex items-center gap-4">
+                ${acc.moneyIn > 0 ? `<span class="assoc-income text-emerald-600 font-medium">+${formatCurrency(acc.moneyIn)}</span>` : ''}
+                ${acc.moneyOut > 0 ? `<span class="text-rose-600 font-medium">-${formatCurrency(acc.moneyOut)}</span>` : ''}
+              </div>
+              <span class="text-slate-400 w-16 text-right">${acc.transactionCount} txn${acc.transactionCount !== 1 ? 's' : ''}</span>
+            </div>
+          </div>
+        `;
+
+        document.getElementById('associated-accounts-list')!.innerHTML = significantAccounts.map(renderAccountRow).join('');
+
+        if (minorAccounts.length > 0) {
+          document.getElementById('associated-accounts-hidden')!.innerHTML = minorAccounts.map(renderAccountRow).join('');
+          document.getElementById('toggle-associated')!.classList.remove('hidden');
+          (document.getElementById('toggle-associated-text') as HTMLElement).textContent = `Show ${minorAccounts.length} more (< $1,000)`;
+        } else {
+          document.getElementById('toggle-associated')!.classList.add('hidden');
+        }
+      } else {
+        document.getElementById('no-accounts')?.classList.remove('hidden');
+        document.getElementById('associated-accounts-list')!.innerHTML = '';
+        document.getElementById('toggle-associated')!.classList.add('hidden');
+      }
+
       // Anomalies
       const highAnomalies = analysis.anomalies.filter(a => a.severity === 'high' || a.severity === 'medium');
       if (highAnomalies.length > 0) {
@@ -416,24 +919,66 @@ import Layout from '../layouts/Layout.astro';
 
       // Documents
       renderDocuments();
+
+      // Transfers
+      renderTransfers();
+
+      // Reapply expenses filter after rendering
+      applyExpensesFilter();
     }
 
     function renderCategories(analysis: ReturnType<typeof analyzeProspect>) {
       const grid = document.getElementById('categories-grid')!;
-      const categories = analysis.spendingCategories.filter(c => c.transactionCount > 0);
+
+      // Get month-filtered transactions
+      const filteredTxns = getFilteredTransactions();
+
+      // Build categories from filtered transactions
+      const categoryMap = new Map<string, { total: number; count: number; transactions: typeof filteredTxns }>();
+
+      for (const txn of filteredTxns) {
+        // Use "Account Transfers" category for transfers, otherwise use original category
+        const catName = txn.isTransfer ? 'Account Transfers' : txn.category;
+
+        // Skip income transactions if expenses only mode (but include transfers)
+        if (expensesOnly && !txn.isTransfer && txn.amount > 0) continue;
+
+        if (!categoryMap.has(catName)) {
+          categoryMap.set(catName, { total: 0, count: 0, transactions: [] });
+        }
+        const cat = categoryMap.get(catName)!;
+        cat.total += Math.abs(txn.amount);
+        cat.count++;
+        cat.transactions.push(txn);
+      }
+
+      // Convert to array and sort by total
+      const categories = Array.from(categoryMap.entries())
+        .map(([name, data]) => ({
+          category: name,
+          total: data.total,
+          transactionCount: data.count,
+          transactions: data.transactions
+        }))
+        .filter(c => c.transactionCount > 0)
+        .sort((a, b) => b.total - a.total);
+
+      // Add color for Account Transfers
+      const TRANSFER_COLOR = '#6366f1'; // Indigo
 
       grid.innerHTML = categories.map(cat => {
-        const color = CATEGORY_COLORS[cat.category] || '#94a3b8';
+        const color = cat.category === 'Account Transfers' ? TRANSFER_COLOR : (CATEGORY_COLORS[cat.category] || '#94a3b8');
         const benchmark = BENCHMARKS[cat.category];
         let benchmarkIndicator = '';
 
-        if (benchmark) {
-          if (cat.benchmarkStatus === 'above') {
+        if (benchmark && cat.category !== 'Account Transfers') {
+          const monthlyAvg = selectedMonth === 'all' ? cat.total / (analysis.period.months || 1) : cat.total;
+          if (monthlyAvg > benchmark.high) {
             benchmarkIndicator = `<span class="text-xs text-rose-500 flex items-center gap-1">
               <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5.293 9.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 7.414V15a1 1 0 11-2 0V7.414L6.707 9.707a1 1 0 01-1.414 0z" clip-rule="evenodd"/></svg>
               Above avg
             </span>`;
-          } else if (cat.benchmarkStatus === 'below') {
+          } else if (monthlyAvg < benchmark.low) {
             benchmarkIndicator = `<span class="text-xs text-emerald-500 flex items-center gap-1">
               <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M14.707 10.293a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L9 12.586V5a1 1 0 012 0v7.586l2.293-2.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
               Below avg
@@ -441,8 +986,11 @@ import Layout from '../layouts/Layout.astro';
           }
         }
 
+        const monthlyAvg = selectedMonth === 'all' ? cat.total / (analysis.period.months || 1) : cat.total;
+        const isTransferCat = cat.category === 'Account Transfers';
+
         return `
-          <button onclick="showCategoryDetail('${cat.category}')" class="bg-slate-50 hover:bg-slate-100 rounded-lg p-4 text-left transition-colors group">
+          <button onclick="showCategoryDetail('${cat.category}')" class="bg-slate-50 hover:bg-slate-100 rounded-lg p-4 text-left transition-colors group ${isTransferCat ? 'border-2 border-dashed border-indigo-200' : ''}">
             <div class="flex items-center justify-between mb-2">
               <div class="flex items-center gap-2">
                 <div class="w-3 h-3 rounded-full" style="background-color: ${color}"></div>
@@ -452,8 +1000,8 @@ import Layout from '../layouts/Layout.astro';
             </div>
             <div class="flex items-end justify-between">
               <div>
-                <p class="text-lg font-semibold text-slate-900">${formatCurrency(cat.total)}</p>
-                <p class="text-xs text-slate-500">${formatCurrency(cat.monthlyAverage)}/month</p>
+                <p class="text-lg font-semibold ${isTransferCat ? 'text-indigo-600' : 'text-slate-900'}">${formatCurrency(cat.total)}</p>
+                ${selectedMonth === 'all' ? `<p class="text-xs text-slate-500">${formatCurrency(monthlyAvg)}/month</p>` : ''}
               </div>
               ${benchmarkIndicator}
             </div>
@@ -468,10 +1016,19 @@ import Layout from '../layouts/Layout.astro';
       const search = (document.getElementById('txn-search') as HTMLInputElement).value.toLowerCase();
       const categoryFilter = (document.getElementById('txn-category-filter') as HTMLSelectElement).value;
 
-      let filtered = prospect.transactions;
+      // Start with month-filtered transactions
+      let filtered = getFilteredTransactions();
+
+      // Filter out transfers
+      filtered = filtered.filter(t => !t.isTransfer);
+
+      // Filter out income if expenses only mode
+      if (expensesOnly) {
+        filtered = filtered.filter(t => t.amount < 0);
+      }
 
       if (search) {
-        filtered = filtered.filter(t => t.description.toLowerCase().includes(search) || t.rawDescription.toLowerCase().includes(search));
+        filtered = filtered.filter(t => t.description.toLowerCase().includes(search) || (t.rawDescription || '').toLowerCase().includes(search));
       }
 
       if (categoryFilter) {
@@ -484,7 +1041,7 @@ import Layout from '../layouts/Layout.astro';
 
       const tbody = document.getElementById('transactions-table')!;
       tbody.innerHTML = paginated.map(txn => `
-        <tr class="border-b border-slate-100 hover:bg-slate-50">
+        <tr class="border-b border-slate-100 hover:bg-slate-50 group">
           <td class="py-3 text-slate-600 whitespace-nowrap">${formatDate(txn.date)}</td>
           <td class="py-3">
             <p class="text-slate-900">${txn.description}</p>
@@ -494,6 +1051,23 @@ import Layout from '../layouts/Layout.astro';
             <span class="px-2 py-1 rounded text-xs font-medium whitespace-nowrap" style="background-color: ${CATEGORY_COLORS[txn.category]}20; color: ${CATEGORY_COLORS[txn.category]}">${txn.category}</span>
           </td>
           <td class="py-3 text-right font-medium whitespace-nowrap ${txn.amount >= 0 ? 'text-emerald-600' : 'text-rose-600'}">${formatCurrency(txn.amount, true)}</td>
+          <td class="py-3 text-center">
+            ${txn.documentId ? `
+              <button onclick="showPdfDetail('${txn.id}')" class="text-xs px-2 py-1 rounded border border-slate-200 hover:bg-emerald-50 hover:border-emerald-300 hover:text-emerald-600 transition-colors opacity-0 group-hover:opacity-100" title="View in document">
+                <svg class="w-4 h-4 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
+              </button>
+            ` : ''}
+          </td>
+          <td class="py-3 text-center">
+            <button onclick="markAsTransfer('${txn.id}')" class="text-xs px-2 py-1 rounded border border-slate-200 hover:bg-blue-50 hover:border-blue-200 hover:text-blue-600 transition-colors opacity-0 group-hover:opacity-100" title="Mark as account transfer">
+              <svg class="w-4 h-4 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+              </svg>
+            </button>
+          </td>
         </tr>
       `).join('');
 
@@ -543,39 +1117,463 @@ import Layout from '../layouts/Layout.astro';
       `).join('');
     }
 
+    function renderTransfers() {
+      if (!prospect) return;
+
+      const transfers = prospect.transactions.filter(t => t.isTransfer);
+      const tbody = document.getElementById('transfers-table')!;
+      const noTransfers = document.getElementById('no-transfers')!;
+
+      if (transfers.length === 0) {
+        tbody.innerHTML = '';
+        noTransfers.classList.remove('hidden');
+        return;
+      }
+
+      noTransfers.classList.add('hidden');
+      tbody.innerHTML = transfers.map(txn => `
+        <tr class="border-b border-slate-100 hover:bg-slate-50">
+          <td class="py-3 text-slate-600 whitespace-nowrap">${formatDate(txn.date)}</td>
+          <td class="py-3">
+            <p class="text-slate-900">${txn.description}</p>
+          </td>
+          <td class="py-3 text-right font-medium whitespace-nowrap ${txn.amount >= 0 ? 'text-emerald-600' : 'text-rose-600'}">${formatCurrency(txn.amount, true)}</td>
+          <td class="py-3 text-center">
+            <button onclick="unmarkAsTransfer('${txn.id}')" class="text-xs px-2 py-1 rounded border border-blue-200 bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors" title="Remove from transfers">
+              <svg class="w-4 h-4 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+              Remove
+            </button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    // Mark transaction as transfer
+    (window as any).markAsTransfer = (id: string) => {
+      if (!prospect) return;
+
+      const txn = prospect.transactions.find(t => t.id === id);
+      if (txn) {
+        txn.isTransfer = true;
+        saveProspect(prospect);
+        renderTransactions();
+        renderTransfers();
+      }
+    };
+
+    // Unmark transaction as transfer
+    (window as any).unmarkAsTransfer = (id: string) => {
+      if (!prospect) return;
+
+      const txn = prospect.transactions.find(t => t.id === id);
+      if (txn) {
+        txn.isTransfer = false;
+        saveProspect(prospect);
+        renderTransactions();
+        renderTransfers();
+      }
+    };
+
+    // PDF Viewer state
+    let currentPdfDoc: any = null;
+    let currentPdfPage = 1;
+    let currentZoom = 1.5;
+    let currentTextItems: any[] = [];
+    let currentSearchText = '';
+
+    // Show PDF detail modal
+    (window as any).showPdfDetail = async (txnId: string) => {
+      if (!prospect) return;
+
+      const txn = prospect.transactions.find(t => t.id === txnId);
+      if (!txn || !txn.documentId) {
+        alert('Document not available for this transaction');
+        return;
+      }
+
+      const doc = prospect.documents.find(d => d.id === txn.documentId);
+      const modal = document.getElementById('pdf-modal')!;
+      const loading = document.getElementById('pdf-loading')!;
+      const canvas = document.getElementById('pdf-canvas') as HTMLCanvasElement;
+
+      // Show modal with loading state
+      modal.classList.remove('hidden');
+      loading.classList.remove('hidden');
+      canvas.style.display = 'none';
+
+      // Set header info (same format as search results)
+      document.getElementById('pdf-modal-title')!.textContent = doc?.filename || 'Document';
+      document.getElementById('pdf-modal-subtitle')!.textContent = `Page ${txn.pageNumber || 1} • ${txn.description}`;
+
+      try {
+        // Get PDF from IndexedDB
+        const pdfData = await getPDF(txn.documentId);
+        if (!pdfData) {
+          alert('PDF document not found. It may have been uploaded before this feature was added.');
+          modal.classList.add('hidden');
+          return;
+        }
+
+        // Load PDF
+        currentPdfDoc = await pdfjsLib.getDocument({ data: pdfData }).promise;
+        currentPdfPage = txn.pageNumber || 1;
+        currentSearchText = txn.rawDescription?.substring(0, 30) || txn.textMatch || '';
+        currentZoom = 1.5;
+
+        document.getElementById('pdf-page-info')!.textContent = `Page ${currentPdfPage} of ${currentPdfDoc.numPages}`;
+        document.getElementById('pdf-zoom-level')!.textContent = `${Math.round(currentZoom * 100)}%`;
+
+        await renderPdfPage();
+
+      } catch (error) {
+        console.error('Error loading PDF:', error);
+        alert('Error loading PDF document');
+        modal.classList.add('hidden');
+      }
+    };
+
+    async function renderPdfPage() {
+      if (!currentPdfDoc) return;
+
+      const loading = document.getElementById('pdf-loading')!;
+      const canvas = document.getElementById('pdf-canvas') as HTMLCanvasElement;
+      const container = document.getElementById('pdf-container')!;
+
+      loading.classList.remove('hidden');
+
+      try {
+        const page = await currentPdfDoc.getPage(currentPdfPage);
+        const viewport = page.getViewport({ scale: currentZoom });
+
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+
+        const ctx = canvas.getContext('2d')!;
+        await page.render({ canvasContext: ctx, viewport }).promise;
+
+        // Get text content for highlighting
+        const textContent = await page.getTextContent();
+        currentTextItems = textContent.items;
+
+        loading.classList.add('hidden');
+        canvas.style.display = 'block';
+
+        // Scroll to the transaction
+        scrollToTransaction(viewport);
+
+      } catch (error) {
+        console.error('Error rendering PDF page:', error);
+        loading.classList.add('hidden');
+      }
+    }
+
+    function scrollToTransaction(viewport: any) {
+      const canvas = document.getElementById('pdf-canvas') as HTMLCanvasElement;
+      const container = document.getElementById('pdf-container')!;
+
+      if (!currentSearchText || currentTextItems.length === 0) {
+        return;
+      }
+
+      // Search for the text in the page
+      const searchLower = currentSearchText.toLowerCase();
+
+      // Build full page text and find match position
+      let pageText = '';
+      const itemPositions: { start: number; end: number; item: any }[] = [];
+
+      for (const item of currentTextItems) {
+        const start = pageText.length;
+        pageText += item.str;
+        itemPositions.push({ start, end: pageText.length, item });
+      }
+
+      const matchPos = pageText.toLowerCase().indexOf(searchLower);
+      if (matchPos === -1) {
+        return;
+      }
+
+      // Find which items contain the match
+      const matchingItems: any[] = [];
+      for (const pos of itemPositions) {
+        if (pos.end > matchPos && pos.start < matchPos + searchLower.length) {
+          matchingItems.push(pos.item);
+        }
+      }
+
+      if (matchingItems.length === 0) {
+        return;
+      }
+
+      // Calculate vertical position from matching items
+      let minY = Infinity, maxY = -Infinity;
+
+      for (const item of matchingItems) {
+        const tx = item.transform;
+        // Transform coordinates (PDF uses bottom-left origin)
+        const y = viewport.height - tx[5];
+        const height = tx[0] || 12;
+
+        minY = Math.min(minY, y - height * currentZoom);
+        maxY = Math.max(maxY, y);
+      }
+
+      // Scroll to center the transaction in view
+      const scrollTop = canvas.offsetTop + minY - container.clientHeight / 2 + (maxY - minY) / 2;
+      container.scrollTo({ top: Math.max(0, scrollTop), behavior: 'smooth' });
+    }
+
+    // PDF modal controls
+    document.getElementById('close-pdf-modal')?.addEventListener('click', () => {
+      document.getElementById('pdf-modal')?.classList.add('hidden');
+      currentPdfDoc = null;
+    });
+
+    document.getElementById('pdf-modal')?.addEventListener('click', (e) => {
+      if (e.target === e.currentTarget) {
+        document.getElementById('pdf-modal')?.classList.add('hidden');
+        currentPdfDoc = null;
+      }
+    });
+
+    document.getElementById('pdf-zoom-in')?.addEventListener('click', async () => {
+      currentZoom = Math.min(currentZoom + 0.25, 3);
+      document.getElementById('pdf-zoom-level')!.textContent = `${Math.round(currentZoom * 100)}%`;
+      await renderPdfPage();
+    });
+
+    document.getElementById('pdf-zoom-out')?.addEventListener('click', async () => {
+      currentZoom = Math.max(currentZoom - 0.25, 0.5);
+      document.getElementById('pdf-zoom-level')!.textContent = `${Math.round(currentZoom * 100)}%`;
+      await renderPdfPage();
+    });
+
+    // Keyboard shortcuts for PDF modal
+    document.addEventListener('keydown', (e) => {
+      const modal = document.getElementById('pdf-modal');
+      if (modal?.classList.contains('hidden')) return;
+
+      if (e.key === 'Escape') {
+        modal?.classList.add('hidden');
+        currentPdfDoc = null;
+      }
+    });
+
+    // Document search functionality
+    let searchTimeout: any = null;
+    const docSearchInput = document.getElementById('doc-search') as HTMLInputElement;
+    const searchResults = document.getElementById('search-results')!;
+    const noSearchResults = document.getElementById('no-search-results')!;
+    const searchEmpty = document.getElementById('search-empty')!;
+
+    docSearchInput?.addEventListener('input', () => {
+      clearTimeout(searchTimeout);
+      const query = docSearchInput.value.trim();
+
+      if (!query) {
+        searchResults.innerHTML = '';
+        noSearchResults.classList.add('hidden');
+        searchEmpty.classList.remove('hidden');
+        return;
+      }
+
+      searchEmpty.classList.add('hidden');
+      searchTimeout = setTimeout(() => performDocSearch(query), 300);
+    });
+
+    async function performDocSearch(query: string) {
+      if (!prospect) return;
+
+      const results: { docId: string; docName: string; pageNumber: number; snippet: string; matchText: string }[] = [];
+      const queryLower = query.toLowerCase();
+
+      for (const doc of prospect.documents) {
+        try {
+          const pdfData = await getPDFWithText(doc.id);
+          if (!pdfData || !pdfData.pageTexts) continue;
+
+          for (const pt of pdfData.pageTexts) {
+            const textLower = pt.text.toLowerCase();
+            let pos = 0;
+            while ((pos = textLower.indexOf(queryLower, pos)) !== -1) {
+              // Get snippet around match
+              const start = Math.max(0, pos - 40);
+              const end = Math.min(pt.text.length, pos + query.length + 40);
+              let snippet = pt.text.substring(start, end);
+              if (start > 0) snippet = '...' + snippet;
+              if (end < pt.text.length) snippet = snippet + '...';
+
+              results.push({
+                docId: doc.id,
+                docName: doc.filename,
+                pageNumber: pt.pageNumber,
+                snippet,
+                matchText: query
+              });
+
+              pos += query.length;
+
+              // Limit results per document
+              if (results.filter(r => r.docId === doc.id).length >= 10) break;
+            }
+          }
+        } catch (e) {
+          console.error('Error searching doc:', doc.id, e);
+        }
+      }
+
+      // Render results
+      if (results.length === 0) {
+        searchResults.innerHTML = '';
+        noSearchResults.classList.remove('hidden');
+        return;
+      }
+
+      noSearchResults.classList.add('hidden');
+      searchResults.innerHTML = results.slice(0, 50).map((r, i) => `
+        <button onclick="openSearchResult('${r.docId}', ${r.pageNumber}, '${r.matchText.replace(/'/g, "\\'")}')"
+                class="w-full text-left p-4 bg-slate-50 hover:bg-emerald-50 rounded-lg border border-slate-200 hover:border-emerald-300 transition-colors group">
+          <div class="flex items-start justify-between gap-3">
+            <div class="flex-1 min-w-0">
+              <p class="text-sm text-slate-900 font-medium truncate">${r.docName}</p>
+              <p class="text-xs text-slate-500 mt-0.5">Page ${r.pageNumber}</p>
+              <p class="text-sm text-slate-600 mt-2 line-clamp-2">${highlightMatch(r.snippet, r.matchText)}</p>
+            </div>
+            <svg class="w-5 h-5 text-slate-400 group-hover:text-emerald-500 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+            </svg>
+          </div>
+        </button>
+      `).join('');
+    }
+
+    function highlightMatch(text: string, match: string): string {
+      const regex = new RegExp(`(${match.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+      return text.replace(regex, '<mark class="bg-emerald-200 text-emerald-900 px-0.5 rounded">$1</mark>');
+    }
+
+    // Open search result in PDF modal
+    (window as any).openSearchResult = async (docId: string, pageNumber: number, matchText: string) => {
+      const doc = prospect?.documents.find(d => d.id === docId);
+      const modal = document.getElementById('pdf-modal')!;
+      const loading = document.getElementById('pdf-loading')!;
+      const canvas = document.getElementById('pdf-canvas') as HTMLCanvasElement;
+
+      modal.classList.remove('hidden');
+      loading.classList.remove('hidden');
+      canvas.style.display = 'none';
+
+      document.getElementById('pdf-modal-title')!.textContent = doc?.filename || 'Document';
+      document.getElementById('pdf-modal-subtitle')!.textContent = `Page ${pageNumber} • Search result`;
+
+      try {
+        const pdfData = await getPDF(docId);
+        if (!pdfData) {
+          alert('PDF not found');
+          modal.classList.add('hidden');
+          return;
+        }
+
+        currentPdfDoc = await pdfjsLib.getDocument({ data: pdfData }).promise;
+        currentPdfPage = pageNumber;
+        currentSearchText = matchText;
+        currentZoom = 1.5;
+
+        document.getElementById('pdf-page-info')!.textContent = `Page ${pageNumber} of ${currentPdfDoc.numPages}`;
+        document.getElementById('pdf-zoom-level')!.textContent = `${Math.round(currentZoom * 100)}%`;
+
+        await renderPdfPage();
+
+      } catch (error) {
+        console.error('Error opening search result:', error);
+        alert('Error loading document');
+        modal.classList.add('hidden');
+      }
+    };
+
+    // Clear all data button
+    document.getElementById('clear-all-btn')?.addEventListener('click', async () => {
+      if (!prospect) return;
+
+      const confirmed = confirm('This will delete all transactions and documents for this prospect. You will need to re-upload your PDFs. Continue?');
+      if (!confirmed) return;
+
+      try {
+        // Clear IndexedDB
+        await clearAllPDFs();
+
+        // Clear prospect data
+        prospect.transactions = [];
+        prospect.documents = [];
+        prospect.accounts = [];
+        saveProspect(prospect);
+
+        // Re-render
+        renderAnalysis();
+        alert('All data cleared. Please re-upload your PDFs.');
+      } catch (error) {
+        console.error('Error clearing data:', error);
+        alert('Error clearing data. Please try refreshing the page.');
+      }
+    });
+
     // Category detail modal
     (window as any).showCategoryDetail = (category: string) => {
       if (!prospect) return;
 
-      const analysis = analyzeProspect(prospect);
-      const cat = analysis.spendingCategories.find(c => c.category === category);
-      if (!cat) return;
+      const filteredTxns = getFilteredTransactions();
+
+      // Build category data from filtered transactions
+      let categoryTxns: typeof filteredTxns;
+      if (category === 'Account Transfers') {
+        categoryTxns = filteredTxns.filter(t => t.isTransfer);
+      } else {
+        categoryTxns = filteredTxns.filter(t => !t.isTransfer && t.category === category);
+        // If expenses only mode, filter to debits
+        if (expensesOnly) {
+          categoryTxns = categoryTxns.filter(t => t.amount < 0);
+        }
+      }
+
+      if (categoryTxns.length === 0) return;
+
+      const total = Math.abs(categoryTxns.reduce((sum, t) => sum + t.amount, 0));
+
+      // Calculate months for average
+      const dates = categoryTxns.map(t => t.date).filter(Boolean);
+      const months = new Set(dates.map(d => d.substring(0, 7)));
+      const monthCount = Math.max(1, months.size);
+      const monthlyAverage = total / monthCount;
 
       document.getElementById('modal-title')!.textContent = category;
 
       const benchmark = BENCHMARKS[category];
+      const benchmarkStatus = benchmark ? (monthlyAverage > benchmark.high ? 'above' : monthlyAverage < benchmark.low ? 'below' : 'normal') : 'normal';
+
       document.getElementById('modal-summary')!.innerHTML = `
         <div class="bg-slate-50 rounded-lg p-4">
           <p class="text-xs text-slate-500">Total</p>
-          <p class="text-xl font-bold text-slate-900">${formatCurrency(cat.total)}</p>
+          <p class="text-xl font-bold text-slate-900">${formatCurrency(total)}</p>
         </div>
         <div class="bg-slate-50 rounded-lg p-4">
           <p class="text-xs text-slate-500">Monthly Avg</p>
-          <p class="text-xl font-bold text-slate-900">${formatCurrency(cat.monthlyAverage)}</p>
+          <p class="text-xl font-bold text-slate-900">${formatCurrency(monthlyAverage)}</p>
         </div>
         <div class="bg-slate-50 rounded-lg p-4">
           <p class="text-xs text-slate-500">Benchmark</p>
-          <p class="text-xl font-bold ${cat.benchmarkStatus === 'above' ? 'text-rose-600' : cat.benchmarkStatus === 'below' ? 'text-emerald-600' : 'text-slate-900'}">
+          <p class="text-xl font-bold ${benchmarkStatus === 'above' ? 'text-rose-600' : benchmarkStatus === 'below' ? 'text-emerald-600' : 'text-slate-900'}">
             ${benchmark ? `$${benchmark.average}/mo` : 'N/A'}
           </p>
         </div>
       `;
 
-      document.getElementById('modal-transactions')!.innerHTML = cat.transactions.map(txn => `
+      document.getElementById('modal-transactions')!.innerHTML = categoryTxns.map(txn => `
         <tr class="border-b border-slate-100">
           <td class="py-2 text-slate-600">${formatDate(txn.date)}</td>
           <td class="py-2 text-slate-900">${txn.description}</td>
-          <td class="py-2 text-right font-medium text-rose-600">${formatCurrency(txn.amount)}</td>
+          <td class="py-2 text-right font-medium ${category === 'Account Transfers' ? 'text-indigo-600' : 'text-rose-600'}">${formatCurrency(Math.abs(txn.amount))}</td>
         </tr>
       `).join('');
 
