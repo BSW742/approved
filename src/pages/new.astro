@@ -1,0 +1,129 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="New Prospect">
+  <div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="mb-8">
+      <a href="/" class="text-slate-500 hover:text-emerald-600 text-sm flex items-center gap-1 mb-4 transition-colors">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+        </svg>
+        Back to Prospects
+      </a>
+      <h1 class="text-3xl font-bold text-slate-900">New Prospect</h1>
+      <p class="text-slate-500 mt-1">Add a new mortgage application prospect</p>
+    </div>
+
+    <form id="prospect-form" class="bg-white rounded-xl border border-slate-200 p-8">
+      <div class="space-y-6">
+        <div>
+          <label for="name" class="block text-sm font-medium text-slate-700 mb-2">Full Name *</label>
+          <input
+            type="text"
+            id="name"
+            name="name"
+            required
+            placeholder="e.g. John Smith"
+            class="w-full px-4 py-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all"
+          />
+        </div>
+
+        <div>
+          <label for="email" class="block text-sm font-medium text-slate-700 mb-2">Email</label>
+          <input
+            type="email"
+            id="email"
+            name="email"
+            placeholder="john@example.com"
+            class="w-full px-4 py-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all"
+          />
+        </div>
+
+        <div>
+          <label for="phone" class="block text-sm font-medium text-slate-700 mb-2">Phone</label>
+          <input
+            type="tel"
+            id="phone"
+            name="phone"
+            placeholder="021 123 4567"
+            class="w-full px-4 py-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all"
+          />
+        </div>
+
+        <div>
+          <label for="address" class="block text-sm font-medium text-slate-700 mb-2">Address</label>
+          <input
+            type="text"
+            id="address"
+            name="address"
+            placeholder="123 Main Street, Auckland"
+            class="w-full px-4 py-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all"
+          />
+        </div>
+
+        <div>
+          <label for="notes" class="block text-sm font-medium text-slate-700 mb-2">Notes</label>
+          <textarea
+            id="notes"
+            name="notes"
+            rows="3"
+            placeholder="Any additional notes about this prospect..."
+            class="w-full px-4 py-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all resize-none"
+          ></textarea>
+        </div>
+      </div>
+
+      <div class="mt-8 flex gap-4">
+        <button
+          type="submit"
+          class="flex-1 bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-6 py-3 rounded-lg font-medium hover:from-emerald-600 hover:to-teal-600 transition-all shadow-sm hover:shadow-md"
+        >
+          Create Prospect
+        </button>
+        <a
+          href="/"
+          class="px-6 py-3 border border-slate-200 text-slate-600 rounded-lg font-medium hover:bg-slate-50 transition-all"
+        >
+          Cancel
+        </a>
+      </div>
+    </form>
+  </div>
+
+  <script>
+    import { createProspect, saveProspect, getProspect } from '../lib/store';
+
+    const form = document.getElementById('prospect-form') as HTMLFormElement;
+
+    form?.addEventListener('submit', (e) => {
+      e.preventDefault();
+
+      const formData = new FormData(form);
+      const name = formData.get('name') as string;
+
+      if (!name.trim()) {
+        alert('Please enter a name');
+        return;
+      }
+
+      const prospect = createProspect(name.trim());
+
+      // Add optional fields
+      const email = formData.get('email') as string;
+      const phone = formData.get('phone') as string;
+      const address = formData.get('address') as string;
+      const notes = formData.get('notes') as string;
+
+      if (email) prospect.email = email;
+      if (phone) prospect.phone = phone;
+      if (address) prospect.address = address;
+      if (notes) prospect.notes = notes;
+
+      saveProspect(prospect);
+
+      // Redirect to prospect detail page
+      window.location.href = `/prospect?id=${prospect.id}`;
+    });
+  </script>
+</Layout>
