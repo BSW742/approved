@@ -142,6 +142,7 @@ import Layout from '../layouts/Layout.astro';
             </button>
             <button data-tab="accounts" class="tab-btn px-6 py-4 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700 whitespace-nowrap">Associated Accounts</button>
             <button data-tab="transfers" class="tab-btn px-6 py-4 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700 whitespace-nowrap">Account Transfers</button>
+            <button data-tab="log" class="tab-btn px-6 py-4 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700 whitespace-nowrap">Log</button>
           </nav>
         </div>
 
@@ -238,8 +239,9 @@ import Layout from '../layouts/Layout.astro';
                   <th class="pb-3 font-medium">Description</th>
                   <th class="pb-3 font-medium">Category</th>
                   <th class="pb-3 font-medium text-right">Amount</th>
-                  <th class="pb-3 font-medium text-center w-16"></th>
-                  <th class="pb-3 font-medium text-center w-16"></th>
+                  <th class="pb-3 font-medium text-center w-12"></th>
+                  <th class="pb-3 font-medium text-center w-12"></th>
+                  <th class="pb-3 font-medium text-center w-12"></th>
                 </tr>
               </thead>
               <tbody id="transactions-table" class="text-sm">
@@ -330,6 +332,22 @@ import Layout from '../layouts/Layout.astro';
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
             </svg>
             <p>No associated accounts detected</p>
+          </div>
+        </div>
+
+        <!-- Log Tab -->
+        <div id="tab-log" class="tab-content hidden p-6">
+          <div class="mb-4">
+            <p class="text-sm text-slate-500">Actions taken to represent data correctly - notes and transfer markings.</p>
+          </div>
+          <div id="log-list" class="space-y-2">
+            <!-- Populated by JS -->
+          </div>
+          <div id="no-log" class="hidden text-center py-12 text-slate-400">
+            <svg class="w-12 h-12 mx-auto mb-3 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            <p>No actions logged yet</p>
           </div>
         </div>
       </div>
@@ -444,13 +462,45 @@ import Layout from '../layouts/Layout.astro';
             </div>
           </div>
         </div>
-        <div class="p-4 bg-slate-50 rounded-b-xl flex gap-3">
-          <button id="attention-view-doc" class="flex-1 px-4 py-2 bg-white border border-slate-200 rounded-lg text-slate-700 hover:bg-slate-100 transition-colors text-sm font-medium">
-            View in Document
+        <div class="p-4 bg-slate-50 rounded-b-xl flex gap-2">
+          <button id="attention-view-doc" class="flex-1 px-3 py-2 bg-white border border-slate-200 rounded-lg text-slate-700 hover:bg-slate-100 transition-colors text-sm font-medium">
+            View Doc
           </button>
-          <button id="attention-mark-transfer" class="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium">
-            Mark as Transfer
+          <button id="attention-add-note" class="flex-1 px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium">
+            Add Note
           </button>
+          <button id="attention-mark-transfer" class="flex-1 px-3 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium">
+            Transfer
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Note Modal -->
+    <div id="note-modal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+      <div class="bg-white rounded-xl max-w-md w-full shadow-xl">
+        <div class="p-6">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-semibold text-slate-900">Add Note</h3>
+            <button onclick="document.getElementById('note-modal').classList.add('hidden')" class="text-slate-400 hover:text-slate-600">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+          <div class="mb-4">
+            <p id="note-modal-txn" class="text-sm text-slate-500 mb-3"></p>
+            <input type="text" id="note-input" maxlength="60" placeholder="Brief note (max 10 words)" class="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none" />
+            <p class="text-xs text-slate-400 mt-1">E.g. "Transfer to savings" or "Annual insurance"</p>
+          </div>
+          <div class="flex gap-3">
+            <button onclick="document.getElementById('note-modal').classList.add('hidden')" class="flex-1 px-4 py-2 border border-slate-200 rounded-lg text-slate-700 hover:bg-slate-50 transition-colors text-sm font-medium">
+              Cancel
+            </button>
+            <button id="save-note-btn" class="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium">
+              Save Note
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -958,6 +1008,9 @@ import Layout from '../layouts/Layout.astro';
       // Transfers
       renderTransfers();
 
+      // Log
+      renderLog();
+
       // Reapply expenses filter after rendering
       applyExpensesFilter();
     }
@@ -1134,11 +1187,19 @@ import Layout from '../layouts/Layout.astro';
           <td class="py-3">
             <p class="text-slate-900">${txn.description}</p>
             ${txn.isAnomalous ? `<p class="text-xs text-amber-600">${txn.anomalyReason}</p>` : ''}
+            ${txn.note ? `<p class="text-xs text-purple-600 mt-1 flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" /></svg>${txn.note}</p>` : ''}
           </td>
           <td class="py-3">
             <span class="px-2 py-1 rounded text-xs font-medium whitespace-nowrap" style="background-color: ${CATEGORY_COLORS[txn.category]}20; color: ${CATEGORY_COLORS[txn.category]}">${txn.category}</span>
           </td>
           <td class="py-3 text-right font-medium whitespace-nowrap ${txn.amount >= 0 ? 'text-emerald-600' : 'text-rose-600'}">${formatCurrency(txn.amount, true)}</td>
+          <td class="py-3 text-center">
+            <button onclick="openNoteModal('${txn.id}')" class="text-xs px-2 py-1 rounded border ${txn.note ? 'border-purple-200 bg-purple-50 text-purple-600' : 'border-slate-200 hover:bg-purple-50 hover:border-purple-200 hover:text-purple-600'} transition-colors ${txn.note ? '' : 'opacity-0 group-hover:opacity-100'}" title="${txn.note ? 'Edit note' : 'Add note'}">
+              <svg class="w-4 h-4 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+              </svg>
+            </button>
+          </td>
           <td class="py-3 text-center">
             ${txn.documentId ? `
               <button onclick="showPdfDetail('${txn.id}')" class="text-xs px-2 py-1 rounded border border-slate-200 hover:bg-emerald-50 hover:border-emerald-300 hover:text-emerald-600 transition-colors opacity-0 group-hover:opacity-100" title="View in document">
@@ -1245,12 +1306,14 @@ import Layout from '../layouts/Layout.astro';
       const txn = prospect.transactions.find(t => t.id === id);
       if (txn) {
         txn.isTransfer = true;
+        txn.transferMarkedAt = new Date().toISOString();
         saveProspect(prospect);
         const analysis = analyzeProspect(prospect);
         renderTransactions();
         renderTransfers();
         renderCategories(analysis);
         renderAttention(analysis);
+        renderLog();
       }
     };
 
@@ -1261,12 +1324,14 @@ import Layout from '../layouts/Layout.astro';
       const txn = prospect.transactions.find(t => t.id === id);
       if (txn) {
         txn.isTransfer = false;
+        txn.transferMarkedAt = undefined;
         saveProspect(prospect);
         const analysis = analyzeProspect(prospect);
         renderTransactions();
         renderTransfers();
         renderCategories(analysis);
         renderAttention(analysis);
+        renderLog();
       }
     };
 
@@ -1291,6 +1356,7 @@ import Layout from '../layouts/Layout.astro';
 
       // Set up action buttons
       const viewDocBtn = document.getElementById('attention-view-doc') as HTMLButtonElement;
+      const addNoteBtn = document.getElementById('attention-add-note') as HTMLButtonElement;
       const markTransferBtn = document.getElementById('attention-mark-transfer') as HTMLButtonElement;
 
       if (txn.documentId) {
@@ -1303,6 +1369,11 @@ import Layout from '../layouts/Layout.astro';
         viewDocBtn.classList.add('hidden');
       }
 
+      addNoteBtn.onclick = () => {
+        modal.classList.add('hidden');
+        (window as any).openNoteModal(id);
+      };
+
       markTransferBtn.onclick = () => {
         modal.classList.add('hidden');
         (window as any).markAsTransfer(id);
@@ -1310,6 +1381,117 @@ import Layout from '../layouts/Layout.astro';
 
       modal.classList.remove('hidden');
     };
+
+    // Note modal state
+    let currentNoteTransactionId: string | null = null;
+
+    // Open note modal
+    (window as any).openNoteModal = (id: string) => {
+      if (!prospect) return;
+
+      const txn = prospect.transactions.find(t => t.id === id);
+      if (!txn) return;
+
+      currentNoteTransactionId = id;
+
+      const modal = document.getElementById('note-modal')!;
+      const input = document.getElementById('note-input') as HTMLInputElement;
+      const txnInfo = document.getElementById('note-modal-txn')!;
+
+      txnInfo.textContent = `${formatDate(txn.date)} • ${txn.description} • ${formatCurrency(Math.abs(txn.amount))}`;
+      input.value = txn.note || '';
+
+      modal.classList.remove('hidden');
+      input.focus();
+    };
+
+    // Save note
+    document.getElementById('save-note-btn')?.addEventListener('click', () => {
+      if (!prospect || !currentNoteTransactionId) return;
+
+      const input = document.getElementById('note-input') as HTMLInputElement;
+      const note = input.value.trim();
+
+      const txn = prospect.transactions.find(t => t.id === currentNoteTransactionId);
+      if (txn) {
+        if (note) {
+          txn.note = note;
+          txn.noteAddedAt = new Date().toISOString();
+        } else {
+          txn.note = undefined;
+          txn.noteAddedAt = undefined;
+        }
+        saveProspect(prospect);
+        renderTransactions();
+        renderLog();
+      }
+
+      document.getElementById('note-modal')?.classList.add('hidden');
+      currentNoteTransactionId = null;
+    });
+
+    // Render log
+    function renderLog() {
+      if (!prospect) return;
+
+      // Collect all logged actions (notes and transfers)
+      const logItems: { date: string; type: 'note' | 'transfer'; txn: typeof prospect.transactions[0] }[] = [];
+
+      for (const txn of prospect.transactions) {
+        if (txn.note && txn.noteAddedAt) {
+          logItems.push({ date: txn.noteAddedAt, type: 'note', txn });
+        }
+        if (txn.isTransfer && txn.transferMarkedAt) {
+          logItems.push({ date: txn.transferMarkedAt, type: 'transfer', txn });
+        }
+      }
+
+      // Sort by date descending (most recent first)
+      logItems.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+      if (logItems.length > 0) {
+        document.getElementById('no-log')?.classList.add('hidden');
+        document.getElementById('log-list')!.innerHTML = logItems.map(item => {
+          const actionDate = new Date(item.date).toLocaleDateString('en-NZ', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+          if (item.type === 'note') {
+            return `
+              <div class="flex items-start gap-3 p-3 bg-purple-50 border border-purple-100 rounded-lg">
+                <svg class="w-5 h-5 text-purple-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+                </svg>
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center justify-between gap-2">
+                    <p class="text-sm font-medium text-slate-800 truncate">${item.txn.description}</p>
+                    <span class="text-xs text-slate-400 whitespace-nowrap">${actionDate}</span>
+                  </div>
+                  <p class="text-sm text-purple-700 mt-1">"${item.txn.note}"</p>
+                  <p class="text-xs text-slate-500 mt-1">${formatDate(item.txn.date)} • ${formatCurrency(Math.abs(item.txn.amount))}</p>
+                </div>
+              </div>
+            `;
+          } else {
+            return `
+              <div class="flex items-start gap-3 p-3 bg-indigo-50 border border-indigo-100 rounded-lg">
+                <svg class="w-5 h-5 text-indigo-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                </svg>
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center justify-between gap-2">
+                    <p class="text-sm font-medium text-slate-800 truncate">${item.txn.description}</p>
+                    <span class="text-xs text-slate-400 whitespace-nowrap">${actionDate}</span>
+                  </div>
+                  <p class="text-sm text-indigo-700 mt-1">Marked as account transfer</p>
+                  <p class="text-xs text-slate-500 mt-1">${formatDate(item.txn.date)} • ${formatCurrency(Math.abs(item.txn.amount))}</p>
+                </div>
+              </div>
+            `;
+          }
+        }).join('');
+      } else {
+        document.getElementById('log-list')!.innerHTML = '';
+        document.getElementById('no-log')?.classList.remove('hidden');
+      }
+    }
 
     // PDF Viewer state
     let currentPdfDoc: any = null;

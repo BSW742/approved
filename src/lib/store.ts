@@ -12,11 +12,14 @@ export interface Transaction {
   accountNumber?: string;
   rawDescription: string;
   isTransfer?: boolean;
+  transferMarkedAt?: string; // ISO timestamp when marked as transfer
   isAnomalous?: boolean;
   anomalyReason?: string;
   documentId?: string; // Reference to the PDF document
   pageNumber?: number; // Page in the PDF where this transaction appears
   textMatch?: string; // The exact text to find/highlight in the PDF
+  note?: string; // User note (max ~10 words)
+  noteAddedAt?: string; // ISO timestamp when note was added
 }
 
 export interface Account {
