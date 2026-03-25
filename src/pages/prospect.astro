@@ -132,6 +132,7 @@ import Layout from '../layouts/Layout.astro';
           <nav class="flex -mb-px min-w-max">
             <button data-tab="transactions" class="tab-btn active px-6 py-4 text-sm font-medium border-b-2 border-emerald-500 text-emerald-600 whitespace-nowrap">Transactions</button>
             <button data-tab="categories" class="tab-btn px-6 py-4 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700 whitespace-nowrap">Categories</button>
+            <button data-tab="attention" class="tab-btn px-6 py-4 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700 whitespace-nowrap">Attention</button>
             <button data-tab="overview" class="tab-btn px-6 py-4 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700 whitespace-nowrap">Overview</button>
             <button data-tab="search" class="tab-btn px-6 py-4 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700 whitespace-nowrap flex items-center gap-2">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -202,6 +203,22 @@ import Layout from '../layouts/Layout.astro';
         <div id="tab-categories" class="tab-content hidden p-6">
           <div id="categories-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <!-- Populated by JS -->
+          </div>
+        </div>
+
+        <!-- Attention Tab -->
+        <div id="tab-attention" class="tab-content hidden p-6">
+          <div class="mb-4">
+            <p class="text-sm text-slate-500">Items that may require review. Transactions marked as account transfers are excluded.</p>
+          </div>
+          <div id="attention-list" class="space-y-3">
+            <!-- Populated by JS -->
+          </div>
+          <div id="no-attention" class="hidden text-center py-12 text-slate-400">
+            <svg class="w-12 h-12 mx-auto mb-3 text-emerald-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <p>No items requiring attention</p>
           </div>
         </div>
 
@@ -317,20 +334,6 @@ import Layout from '../layouts/Layout.astro';
         </div>
       </div>
 
-      <!-- Anomalies Alert -->
-      <div id="anomalies-alert" class="hidden bg-amber-50 border border-amber-200 rounded-xl p-6">
-        <div class="flex items-start gap-4">
-          <div class="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center flex-shrink-0">
-            <svg class="w-5 h-5 text-amber-600" fill="currentColor" viewBox="0 0 20 20">
-              <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
-            </svg>
-          </div>
-          <div class="flex-1">
-            <h3 class="font-semibold text-amber-800">Items Requiring Attention</h3>
-            <div id="anomalies-list" class="mt-2 space-y-2 text-sm text-amber-700"></div>
-          </div>
-        </div>
-      </div>
     </div>
 
     <!-- Category Detail Modal -->
@@ -893,22 +896,8 @@ import Layout from '../layouts/Layout.astro';
         document.getElementById('toggle-associated')!.classList.add('hidden');
       }
 
-      // Anomalies
-      const highAnomalies = analysis.anomalies.filter(a => a.severity === 'high' || a.severity === 'medium');
-      if (highAnomalies.length > 0) {
-        document.getElementById('anomalies-alert')?.classList.remove('hidden');
-        document.getElementById('anomalies-list')!.innerHTML = highAnomalies.map(a => `
-          <div class="flex items-start gap-2">
-            <span class="w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${a.severity === 'high' ? 'bg-rose-500' : 'bg-amber-500'}"></span>
-            <div>
-              <p>${a.reason}</p>
-              ${a.suggestion ? `<p class="text-amber-600 text-xs mt-0.5">${a.suggestion}</p>` : ''}
-            </div>
-          </div>
-        `).join('');
-      } else {
-        document.getElementById('anomalies-alert')?.classList.add('hidden');
-      }
+      // Attention items
+      renderAttention(analysis);
 
       // Categories
       renderCategories(analysis);
@@ -1007,6 +996,31 @@ import Layout from '../layouts/Layout.astro';
           </button>
         `;
       }).join('');
+    }
+
+    function renderAttention(analysis: ReturnType<typeof analyzeProspect>) {
+      if (!prospect) return;
+
+      const transferIds = new Set(prospect.transactions.filter(t => t.isTransfer).map(t => t.id));
+      const attentionItems = analysis.anomalies
+        .filter(a => a.severity === 'high' || a.severity === 'medium')
+        .filter(a => !a.transactionId || !transferIds.has(a.transactionId));
+
+      if (attentionItems.length > 0) {
+        document.getElementById('no-attention')?.classList.add('hidden');
+        document.getElementById('attention-list')!.innerHTML = attentionItems.map(a => `
+          <div class="flex items-start gap-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+            <span class="w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${a.severity === 'high' ? 'bg-rose-500' : 'bg-amber-500'}"></span>
+            <div>
+              <p class="text-slate-800">${a.reason}</p>
+              ${a.suggestion ? `<p class="text-amber-600 text-sm mt-1">${a.suggestion}</p>` : ''}
+            </div>
+          </div>
+        `).join('');
+      } else {
+        document.getElementById('attention-list')!.innerHTML = '';
+        document.getElementById('no-attention')?.classList.remove('hidden');
+      }
     }
 
     function renderTransactions() {
@@ -1157,9 +1171,11 @@ import Layout from '../layouts/Layout.astro';
       if (txn) {
         txn.isTransfer = true;
         saveProspect(prospect);
+        const analysis = analyzeProspect(prospect);
         renderTransactions();
         renderTransfers();
-        renderCategories(analyzeProspect(prospect));
+        renderCategories(analysis);
+        renderAttention(analysis);
       }
     };
 
@@ -1171,9 +1187,11 @@ import Layout from '../layouts/Layout.astro';
       if (txn) {
         txn.isTransfer = false;
         saveProspect(prospect);
+        const analysis = analyzeProspect(prospect);
         renderTransactions();
         renderTransfers();
-        renderCategories(analyzeProspect(prospect));
+        renderCategories(analysis);
+        renderAttention(analysis);
       }
     };
 
