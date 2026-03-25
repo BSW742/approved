@@ -407,6 +407,53 @@ import Layout from '../layouts/Layout.astro';
         </div>
       </div>
     </div>
+
+    <!-- Attention Transaction Modal -->
+    <div id="attention-modal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+      <div class="bg-white rounded-xl max-w-md w-full shadow-xl">
+        <div class="p-6 border-b border-slate-200">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-semibold text-slate-900">Transaction Details</h3>
+            <button onclick="document.getElementById('attention-modal').classList.add('hidden')" class="text-slate-400 hover:text-slate-600">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+          <div class="space-y-3">
+            <div class="flex justify-between items-start">
+              <div>
+                <p id="attention-modal-date" class="text-sm text-slate-500"></p>
+                <p id="attention-modal-desc" class="font-medium text-slate-800"></p>
+              </div>
+              <p id="attention-modal-amount" class="text-xl font-bold"></p>
+            </div>
+            <div class="bg-slate-50 rounded-lg p-3">
+              <p class="text-xs text-slate-500 mb-1">Original description</p>
+              <p id="attention-modal-raw" class="text-sm text-slate-700 font-mono"></p>
+            </div>
+            <div class="flex gap-4 text-sm">
+              <div>
+                <p class="text-slate-500">Category</p>
+                <p id="attention-modal-category" class="font-medium text-slate-800"></p>
+              </div>
+              <div>
+                <p class="text-slate-500">Source</p>
+                <p id="attention-modal-source" class="font-medium text-slate-800"></p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="p-4 bg-slate-50 rounded-b-xl flex gap-3">
+          <button id="attention-view-doc" class="flex-1 px-4 py-2 bg-white border border-slate-200 rounded-lg text-slate-700 hover:bg-slate-100 transition-colors text-sm font-medium">
+            View in Document
+          </button>
+          <button id="attention-mark-transfer" class="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium">
+            Mark as Transfer
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script is:inline src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
@@ -1008,15 +1055,33 @@ import Layout from '../layouts/Layout.astro';
 
       if (attentionItems.length > 0) {
         document.getElementById('no-attention')?.classList.add('hidden');
-        document.getElementById('attention-list')!.innerHTML = attentionItems.map(a => `
-          <div class="flex items-start gap-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-            <span class="w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${a.severity === 'high' ? 'bg-rose-500' : 'bg-amber-500'}"></span>
-            <div>
-              <p class="text-slate-800">${a.reason}</p>
-              ${a.suggestion ? `<p class="text-amber-600 text-sm mt-1">${a.suggestion}</p>` : ''}
+        document.getElementById('attention-list')!.innerHTML = attentionItems.map(a => {
+          const txn = a.transactionId ? prospect.transactions.find(t => t.id === a.transactionId) : null;
+          return `
+            <div class="p-4 bg-amber-50 border border-amber-200 rounded-lg ${txn ? 'cursor-pointer hover:bg-amber-100 transition-colors' : ''}" ${txn ? `onclick="showAttentionTransaction('${a.transactionId}')"` : ''}>
+              <div class="flex items-start gap-3">
+                <span class="w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${a.severity === 'high' ? 'bg-rose-500' : 'bg-amber-500'}"></span>
+                <div class="flex-1">
+                  <p class="text-slate-800">${a.reason}</p>
+                  ${a.suggestion ? `<p class="text-amber-600 text-sm mt-1">${a.suggestion}</p>` : ''}
+                  ${txn ? `
+                    <div class="mt-3 pt-3 border-t border-amber-200">
+                      <div class="flex items-center justify-between text-sm">
+                        <div>
+                          <span class="text-slate-500">${formatDate(txn.date)}</span>
+                          <span class="mx-2 text-slate-300">|</span>
+                          <span class="text-slate-700">${txn.description}</span>
+                        </div>
+                        <span class="font-medium ${txn.amount < 0 ? 'text-rose-600' : 'text-emerald-600'}">${formatCurrency(Math.abs(txn.amount))}</span>
+                      </div>
+                      <p class="text-xs text-slate-400 mt-1">${txn.category} • Click to view options</p>
+                    </div>
+                  ` : ''}
+                </div>
+              </div>
             </div>
-          </div>
-        `).join('');
+          `;
+        }).join('');
       } else {
         document.getElementById('attention-list')!.innerHTML = '';
         document.getElementById('no-attention')?.classList.remove('hidden');
@@ -1193,6 +1258,47 @@ import Layout from '../layouts/Layout.astro';
         renderCategories(analysis);
         renderAttention(analysis);
       }
+    };
+
+    // Show attention transaction options
+    (window as any).showAttentionTransaction = (id: string) => {
+      if (!prospect) return;
+
+      const txn = prospect.transactions.find(t => t.id === id);
+      if (!txn) return;
+
+      // Show options modal
+      const modal = document.getElementById('attention-modal');
+      if (!modal) return;
+
+      document.getElementById('attention-modal-date')!.textContent = formatDate(txn.date);
+      document.getElementById('attention-modal-desc')!.textContent = txn.description;
+      document.getElementById('attention-modal-raw')!.textContent = txn.rawDescription || txn.description;
+      document.getElementById('attention-modal-amount')!.textContent = formatCurrency(Math.abs(txn.amount));
+      document.getElementById('attention-modal-amount')!.className = `text-xl font-bold ${txn.amount < 0 ? 'text-rose-600' : 'text-emerald-600'}`;
+      document.getElementById('attention-modal-category')!.textContent = txn.category;
+      document.getElementById('attention-modal-source')!.textContent = txn.source || 'Unknown';
+
+      // Set up action buttons
+      const viewDocBtn = document.getElementById('attention-view-doc') as HTMLButtonElement;
+      const markTransferBtn = document.getElementById('attention-mark-transfer') as HTMLButtonElement;
+
+      if (txn.documentId) {
+        viewDocBtn.classList.remove('hidden');
+        viewDocBtn.onclick = () => {
+          modal.classList.add('hidden');
+          (window as any).viewInDocument(id);
+        };
+      } else {
+        viewDocBtn.classList.add('hidden');
+      }
+
+      markTransferBtn.onclick = () => {
+        modal.classList.add('hidden');
+        (window as any).markAsTransfer(id);
+      };
+
+      modal.classList.remove('hidden');
     };
 
     // PDF Viewer state
