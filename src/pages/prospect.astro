@@ -1049,9 +1049,19 @@ import Layout from '../layouts/Layout.astro';
       if (!prospect) return;
 
       const transferIds = new Set(prospect.transactions.filter(t => t.isTransfer).map(t => t.id));
+
+      // Get transaction IDs in selected date range
+      const filteredTxnIds = new Set(getFilteredTransactions().map(t => t.id));
+
       const attentionItems = analysis.anomalies
         .filter(a => a.severity === 'high' || a.severity === 'medium')
-        .filter(a => !a.transactionId || !transferIds.has(a.transactionId));
+        .filter(a => !a.transactionId || !transferIds.has(a.transactionId))
+        .filter(a => {
+          // If no transactionId (category-level anomaly), only show when viewing all data
+          if (!a.transactionId) return selectedMonth === 'all';
+          // If has transactionId, only show if transaction is in selected date range
+          return filteredTxnIds.has(a.transactionId);
+        });
 
       if (attentionItems.length > 0) {
         document.getElementById('no-attention')?.classList.add('hidden');
