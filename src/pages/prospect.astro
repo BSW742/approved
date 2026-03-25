@@ -538,6 +538,58 @@ import Layout from '../layouts/Layout.astro';
       </div>
     </div>
 
+    <!-- Extraction Validation Modal -->
+    <div id="validation-modal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 overflow-y-auto">
+      <div class="bg-white rounded-xl max-w-2xl w-full shadow-xl my-8">
+        <div class="p-6">
+          <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center">
+                <svg class="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <h3 class="text-lg font-semibold text-slate-900">Extraction Validation</h3>
+            </div>
+            <button onclick="document.getElementById('validation-modal').classList.add('hidden')" class="text-slate-400 hover:text-slate-600">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+
+          <!-- Stats -->
+          <div id="validation-stats" class="grid grid-cols-3 gap-4 mb-4">
+            <!-- Populated by JS -->
+          </div>
+
+          <!-- Warnings -->
+          <div id="validation-warnings" class="space-y-2 mb-4">
+            <!-- Populated by JS -->
+          </div>
+
+          <!-- Debug: Raw Text -->
+          <details class="bg-slate-50 rounded-lg">
+            <summary class="px-4 py-2 cursor-pointer text-sm font-medium text-slate-600 hover:text-slate-800">
+              Debug: View Raw Extracted Text
+            </summary>
+            <div id="validation-raw-text" class="p-4 max-h-64 overflow-y-auto text-xs font-mono text-slate-600 whitespace-pre-wrap border-t border-slate-200">
+              <!-- Populated by JS -->
+            </div>
+          </details>
+
+          <div class="mt-4 flex gap-2">
+            <button onclick="document.getElementById('validation-modal').classList.add('hidden')" class="flex-1 px-4 py-2 bg-slate-100 hover:bg-slate-200 rounded-lg text-slate-700 font-medium transition-colors">
+              Dismiss
+            </button>
+            <button onclick="document.getElementById('validation-modal').classList.add('hidden'); document.querySelector('[data-tab=transactions]')?.click();" class="flex-1 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 rounded-lg text-white font-medium transition-colors">
+              View Transactions
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Gap Modal -->
     <div id="gap-modal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
       <div class="bg-white rounded-xl max-w-sm w-full shadow-xl">
@@ -613,6 +665,17 @@ import Layout from '../layouts/Layout.astro';
     // Expense Window state
     let windowStart: string = '';
     let windowEnd: string = '';
+
+    // Last upload validation results
+    let lastUploadValidation: {
+      pageCount: number;
+      txnCount: number;
+      txnPerPage: number;
+      warnings: string[];
+      statementPeriod: { start?: string; end?: string };
+      datesOutsidePeriod: number;
+      rawTextSample: string;
+    } | null = null;
 
     if (!prospect) {
       window.location.href = '/';
@@ -787,6 +850,47 @@ import Layout from '../layouts/Layout.astro';
 
     // Store current validation for modal
     let currentValidation: ReturnType<typeof validateWindow> | null = null;
+
+    // Show extraction validation warnings
+    function showValidationWarnings(validation: NonNullable<typeof lastUploadValidation>) {
+      const modal = document.getElementById('validation-modal');
+      const statsEl = document.getElementById('validation-stats');
+      const warningsEl = document.getElementById('validation-warnings');
+      const rawTextEl = document.getElementById('validation-raw-text');
+
+      if (!modal || !statsEl || !warningsEl || !rawTextEl) return;
+
+      // Stats
+      statsEl.innerHTML = `
+        <div class="bg-slate-100 rounded-lg p-3 text-center">
+          <p class="text-2xl font-bold text-slate-800">${validation.txnCount}</p>
+          <p class="text-xs text-slate-500">Transactions</p>
+        </div>
+        <div class="bg-slate-100 rounded-lg p-3 text-center">
+          <p class="text-2xl font-bold text-slate-800">${validation.pageCount}</p>
+          <p class="text-xs text-slate-500">Pages</p>
+        </div>
+        <div class="bg-${validation.txnPerPage < 3 ? 'amber' : 'slate'}-100 rounded-lg p-3 text-center">
+          <p class="text-2xl font-bold text-${validation.txnPerPage < 3 ? 'amber-600' : 'slate-800'}">${validation.txnPerPage.toFixed(1)}</p>
+          <p class="text-xs text-slate-500">Per Page</p>
+        </div>
+      `;
+
+      // Warnings
+      warningsEl.innerHTML = validation.warnings.map(w => `
+        <div class="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+          <svg class="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+          </svg>
+          <p class="text-sm text-amber-800">${w}</p>
+        </div>
+      `).join('');
+
+      // Raw text for debugging
+      rawTextEl.textContent = validation.rawTextSample;
+
+      modal.classList.remove('hidden');
+    }
 
     // Show gap modal
     (window as any).showGapModal = () => {
@@ -1006,11 +1110,17 @@ import Layout from '../layouts/Layout.astro';
           if (detailEl) detailEl.textContent = `Could not extract transactions from ${total} file${total > 1 ? 's' : ''}. Check the PDF format.`;
         }
 
-        // Keep visible longer if no transactions
+        // Show validation warnings if any
+        if (lastUploadValidation && lastUploadValidation.warnings.length > 0) {
+          showValidationWarnings(lastUploadValidation);
+        }
+
+        // Keep visible longer if no transactions or warnings
+        const hasWarnings = lastUploadValidation?.warnings.length ?? 0 > 0;
         setTimeout(() => {
           progressEl?.classList.add('hidden');
           if (progressFill) progressFill.style.width = '0%';
-        }, totalTxns > 0 ? 1500 : 3000);
+        }, totalTxns > 0 && !hasWarnings ? 1500 : 3000);
 
         (e.target as HTMLInputElement).value = '';
         renderAnalysis();
@@ -1116,11 +1226,49 @@ import Layout from '../layouts/Layout.astro';
           document: result.document
         });
 
+        // === VALIDATION CHECKS ===
+        const validation = {
+          pageCount: pdf.numPages,
+          txnCount: result.transactions.length,
+          txnPerPage: result.transactions.length / pdf.numPages,
+          warnings: [] as string[],
+          statementPeriod: { start: result.document.periodStart, end: result.document.periodEnd },
+          datesOutsidePeriod: 0,
+          rawTextSample: fullText.substring(0, 2000),
+        };
+
+        // Check 1: Transactions per page (expect ~10-30 per page for statements)
+        if (validation.txnPerPage < 3) {
+          validation.warnings.push(`Low extraction: Only ${validation.txnCount} transactions from ${validation.pageCount} pages (${validation.txnPerPage.toFixed(1)}/page). Expected 10-30/page.`);
+        }
+
+        // Check 2: Date range validation
+        if (result.document.periodStart && result.document.periodEnd) {
+          const periodStart = result.document.periodStart;
+          const periodEnd = result.document.periodEnd;
+
+          for (const txn of result.transactions) {
+            if (txn.date && (txn.date < periodStart || txn.date > periodEnd)) {
+              validation.datesOutsidePeriod++;
+            }
+          }
+
+          if (validation.datesOutsidePeriod > 0) {
+            validation.warnings.push(`${validation.datesOutsidePeriod} transactions have dates outside statement period (${periodStart} to ${periodEnd}).`);
+          }
+        }
+
+        // Check 3: Zero transactions
         if (result.transactions.length === 0) {
-          console.warn('No transactions parsed! First 1000 chars of text:', fullText.substring(0, 1000));
+          validation.warnings.push('No transactions extracted. PDF format may not be supported or text extraction failed.');
+          console.warn('No transactions parsed! First 2000 chars of text:', fullText.substring(0, 2000));
         } else {
           console.log('Sample transactions:', result.transactions.slice(0, 3));
         }
+
+        // Store validation for display
+        lastUploadValidation = validation;
+        console.log('Validation:', validation);
 
         // Merge transactions
         prospect.transactions = mergeTransactions(prospect.transactions, result.transactions);
