@@ -1044,7 +1044,42 @@ import Layout from '../layouts/Layout.astro';
           onProgress?.(`Extracting page ${i} of ${pdf.numPages}...`);
           const page = await pdf.getPage(i);
           const textContent = await page.getTextContent();
-          const pageText = textContent.items.map((item: any) => item.str).join(' ');
+
+          // Extract text with position data and reconstruct rows properly
+          const items = textContent.items.map((item: any) => ({
+            str: item.str,
+            x: item.transform[4],  // x position
+            y: item.transform[5],  // y position
+          }));
+
+          // Group items by y-coordinate (same row = similar y value, within 3px tolerance)
+          const rows: Map<number, typeof items> = new Map();
+          for (const item of items) {
+            // Find existing row with similar y
+            let foundRow = false;
+            for (const [rowY, rowItems] of rows) {
+              if (Math.abs(rowY - item.y) < 3) {
+                rowItems.push(item);
+                foundRow = true;
+                break;
+              }
+            }
+            if (!foundRow) {
+              rows.set(item.y, [item]);
+            }
+          }
+
+          // Sort rows by y (descending - PDF coordinates start from bottom)
+          const sortedRows = Array.from(rows.entries())
+            .sort((a, b) => b[0] - a[0]);
+
+          // Build page text by sorting each row's items by x and joining
+          const pageText = sortedRows.map(([, rowItems]) => {
+            // Sort items in row by x position (left to right)
+            rowItems.sort((a, b) => a.x - b.x);
+            return rowItems.map(item => item.str).join(' ');
+          }).join('\n');
+
           fullText += pageText + '\n';
           pageTexts.push({ pageNumber: i, text: pageText });
         }
