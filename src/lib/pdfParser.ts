@@ -103,10 +103,13 @@ export function parseANZStatement(text: string, filename: string, documentId?: s
   // Example: "15 Dec   DD   9554-1054-1022-6573 DEBIT TRANSFER 162205   1,257.00   1,137.10"
   const txnPattern = /(\d{1,2}\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec))\s+(AP|BP|DC|DD|EP|AT|VT|IF|CQ|ED|FX|IP|IA)\s+(.+?)\s+([\d,]+\.\d{2}(?:\s+OD)?)\s+([\d,]+\.\d{2}(?:\s+OD)?)?(?:\s+([\d,]+\.\d{2}(?:\s+OD)?))?/gi;
 
-  // Determine base year from period or use current year
+  // Determine base year from period START (not end) to handle year-spanning statements
+  // e.g., "10 Dec 2025 - 09 Mar 2026" should start assigning 2025 to Dec transactions
   const currentYear = new Date().getFullYear();
   let baseYear = currentYear;
-  if (periodEnd) {
+  if (periodStart) {
+    baseYear = parseInt(periodStart.split('-')[0]);
+  } else if (periodEnd) {
     baseYear = parseInt(periodEnd.split('-')[0]);
   }
   // Sanity check - if base year is in the future, use current year - 1
