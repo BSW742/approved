@@ -71,9 +71,9 @@ import Layout from '../layouts/Layout.astro';
     </div>
 
     <!-- Analysis Content -->
-    <div id="analysis-content" class="hidden space-y-6">
-      <!-- Summary Bar: Month selector, Money Out, Documents -->
-      <div class="bg-white rounded-xl border border-slate-200 p-4">
+    <div id="analysis-content" class="hidden">
+      <!-- Summary Bar: Month selector, Avg Expenses, Mode Toggle, Documents -->
+      <div class="bg-white rounded-t-xl border border-slate-200 border-b-0 p-4">
         <div class="flex items-center justify-between flex-wrap gap-4">
           <!-- Month Selector -->
           <div class="flex items-center gap-3">
@@ -92,13 +92,22 @@ import Layout from '../layouts/Layout.astro';
             </button>
           </div>
 
-          <!-- Money Out -->
+          <!-- Avg Monthly Expenses -->
           <div class="flex items-center gap-3">
             <div class="text-right">
-              <p class="text-xs text-slate-500 uppercase tracking-wide">Total Expenses</p>
-              <p id="total-out" class="text-2xl font-bold text-rose-600">$0.00</p>
+              <p class="text-xs text-slate-500 uppercase tracking-wide">Avg Monthly</p>
+              <p id="avg-monthly-out" class="text-2xl font-bold text-rose-600">$0.00</p>
             </div>
-            <p id="monthly-out" class="text-xs text-slate-400 hidden sm:block"></p>
+          </div>
+
+          <!-- Mode Toggle -->
+          <div class="inline-flex bg-slate-100 rounded-full p-1">
+            <button id="mode-input" class="mode-btn px-5 py-1.5 rounded-full text-sm font-medium transition-all bg-white text-emerald-600 shadow-sm">
+              Input
+            </button>
+            <button id="mode-output" class="mode-btn px-5 py-1.5 rounded-full text-sm font-medium transition-all text-slate-500 hover:text-slate-700">
+              Output
+            </button>
           </div>
 
           <!-- Documents -->
@@ -126,20 +135,8 @@ import Layout from '../layouts/Layout.astro';
         </div>
       </div>
 
-      <!-- Mode Toggle -->
-      <div class="flex justify-center mb-6">
-        <div class="inline-flex bg-slate-100 rounded-full p-1">
-          <button id="mode-input" class="mode-btn px-6 py-2 rounded-full text-sm font-medium transition-all bg-white text-emerald-600 shadow-sm">
-            Input
-          </button>
-          <button id="mode-output" class="mode-btn px-6 py-2 rounded-full text-sm font-medium transition-all text-slate-500 hover:text-slate-700">
-            Output
-          </button>
-        </div>
-      </div>
-
       <!-- Input Mode Tabs -->
-      <div id="input-mode" class="bg-white rounded-xl border border-slate-200">
+      <div id="input-mode" class="bg-white rounded-b-xl border border-slate-200 border-t-0">
         <div class="border-b border-slate-200 overflow-x-auto">
           <nav class="flex -mb-px min-w-max">
             <button data-tab="transactions" class="tab-btn active px-6 py-4 text-sm font-medium border-b-2 border-emerald-500 text-emerald-600 whitespace-nowrap">Transactions</button>
@@ -349,7 +346,7 @@ import Layout from '../layouts/Layout.astro';
       </div>
 
       <!-- Output Mode Tabs -->
-      <div id="output-mode" class="hidden bg-white rounded-xl border border-slate-200">
+      <div id="output-mode" class="hidden bg-white rounded-b-xl border border-slate-200 border-t-0">
         <div class="border-b border-slate-200 overflow-x-auto">
           <nav class="flex -mb-px min-w-max">
             <button data-output-tab="average" class="output-tab-btn active px-6 py-4 text-sm font-medium border-b-2 border-emerald-500 text-emerald-600 whitespace-nowrap">Average Expense</button>
@@ -1021,14 +1018,9 @@ import Layout from '../layouts/Layout.astro';
         document.getElementById('monthly-in')!.textContent = 'this month';
       }
 
-      document.getElementById('total-out')!.textContent = formatCurrency(moneyOut);
-      const monthlyOutEl = document.getElementById('monthly-out')!;
-      if (selectedMonth === 'all' && analysis.period.months > 1) {
-        monthlyOutEl.textContent = `(${formatCurrency(moneyOut / analysis.period.months)}/mo avg)`;
-        monthlyOutEl.classList.remove('hidden');
-      } else {
-        monthlyOutEl.classList.add('hidden');
-      }
+      // Show average monthly expenses
+      const avgMonthlyExpense = selectedMonth === 'all' ? moneyOut / analysis.period.months : moneyOut;
+      document.getElementById('avg-monthly-out')!.textContent = formatCurrency(avgMonthlyExpense);
 
       const net = moneyIn - moneyOut;
       const netEl = document.getElementById('net-position')!;
