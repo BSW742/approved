@@ -132,7 +132,6 @@ import Layout from '../layouts/Layout.astro';
           <nav class="flex -mb-px min-w-max">
             <button data-tab="transactions" class="tab-btn active px-6 py-4 text-sm font-medium border-b-2 border-emerald-500 text-emerald-600 whitespace-nowrap">Transactions</button>
             <button data-tab="categories" class="tab-btn px-6 py-4 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700 whitespace-nowrap">Categories</button>
-            <button data-tab="documents" class="tab-btn px-6 py-4 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700 whitespace-nowrap">Documents</button>
             <button data-tab="overview" class="tab-btn px-6 py-4 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700 whitespace-nowrap">Overview</button>
             <button data-tab="search" class="tab-btn px-6 py-4 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700 whitespace-nowrap flex items-center gap-2">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -147,7 +146,7 @@ import Layout from '../layouts/Layout.astro';
 
         <!-- Overview Tab -->
         <div id="tab-overview" class="tab-content hidden p-6">
-          <div id="overview-grid" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div id="overview-grid" class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
             <!-- Money In -->
             <div id="money-in-section" class="income-section">
               <h3 class="font-semibold text-slate-700 mb-4">Money In</h3>
@@ -182,6 +181,19 @@ import Layout from '../layouts/Layout.astro';
               <div class="space-y-3" id="key-indicators">
                 <!-- Populated by JS -->
               </div>
+            </div>
+          </div>
+
+          <!-- Documents Section -->
+          <div class="border-t border-slate-200 pt-6">
+            <div class="flex justify-between items-center mb-4">
+              <h3 class="font-semibold text-slate-700">Documents</h3>
+              <button id="clear-all-btn" class="text-xs px-3 py-1.5 rounded border border-rose-200 text-rose-600 hover:bg-rose-50 transition-colors">
+                Clear All & Reset
+              </button>
+            </div>
+            <div id="documents-list" class="space-y-3">
+              <!-- Populated by JS -->
             </div>
           </div>
         </div>
@@ -219,19 +231,6 @@ import Layout from '../layouts/Layout.astro';
             </table>
           </div>
           <div id="txn-pagination" class="mt-4 flex justify-center gap-2"></div>
-        </div>
-
-        <!-- Documents Tab -->
-        <div id="tab-documents" class="tab-content hidden p-6">
-          <div class="flex justify-between items-center mb-4">
-            <p class="text-sm text-slate-500">Uploaded bank statements</p>
-            <button id="clear-all-btn" class="text-xs px-3 py-1.5 rounded border border-rose-200 text-rose-600 hover:bg-rose-50 transition-colors">
-              Clear All & Reset
-            </button>
-          </div>
-          <div id="documents-list" class="space-y-3">
-            <!-- Populated by JS -->
-          </div>
         </div>
 
         <!-- Account Transfers Tab -->
