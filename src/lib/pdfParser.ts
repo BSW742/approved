@@ -70,6 +70,9 @@ export function parseANZStatement(text: string, filename: string, documentId?: s
   if (periodMatch) {
     periodStart = parseNZDate(periodMatch[1]);
     periodEnd = parseNZDate(periodMatch[2]);
+    console.log(`Statement period parsed: ${periodMatch[1]} -> ${periodStart} | ${periodMatch[2]} -> ${periodEnd}`);
+  } else {
+    console.log('Statement period NOT FOUND in text');
   }
 
   // Extract account type
@@ -109,12 +112,17 @@ export function parseANZStatement(text: string, filename: string, documentId?: s
   let baseYear = currentYear;
   if (periodStart) {
     baseYear = parseInt(periodStart.split('-')[0]);
+    console.log(`baseYear from periodStart: ${baseYear}`);
   } else if (periodEnd) {
     baseYear = parseInt(periodEnd.split('-')[0]);
+    console.log(`baseYear from periodEnd: ${baseYear}`);
+  } else {
+    console.log(`baseYear defaulting to currentYear: ${baseYear}`);
   }
   // Sanity check - if base year is in the future, use current year - 1
   // Bank statements are always historical
   if (baseYear > currentYear) {
+    console.log(`baseYear ${baseYear} is in future, capping to ${currentYear}`);
     baseYear = currentYear;
   }
 
@@ -148,13 +156,15 @@ export function parseANZStatement(text: string, filename: string, documentId?: s
       txnYear = thisYear - 1;
     }
 
-    // Handle year rollover in statement
-    if (monthNum < lastMonth && lastMonth >= 10 && monthNum <= 3) {
-      // Rolled from Dec to Jan - increment year
-      txnYear = Math.min(txnYear + 1, thisYear);
-    } else if (monthNum > lastMonth && lastMonth <= 3 && monthNum >= 10) {
-      // Rolled back from Jan to Dec (going backwards in statement)
-      txnYear = txnYear - 1;
+    // Handle year rollover in statement (only after we've seen at least one month)
+    if (lastMonth > 0) {
+      if (monthNum < lastMonth && lastMonth >= 10 && monthNum <= 3) {
+        // Rolled from Dec to Jan - increment year
+        txnYear = Math.min(txnYear + 1, thisYear);
+      } else if (monthNum > lastMonth && lastMonth <= 3 && monthNum >= 10) {
+        // Rolled back from Jan to Dec (going backwards in statement)
+        txnYear = txnYear - 1;
+      }
     }
     lastMonth = monthNum;
 
@@ -164,8 +174,14 @@ export function parseANZStatement(text: string, filename: string, documentId?: s
     const parsedDate = new Date(date);
     const today = new Date();
     if (parsedDate > today) {
+      console.log(`Date ${date} is in future, adjusting year from ${txnYear} to ${txnYear - 1}`);
       txnYear = txnYear - 1;
       date = parseNZDate(dateStr + ' ' + txnYear);
+    }
+
+    // Debug: log first 5 transactions with their dates
+    if (transactions.length < 5) {
+      console.log(`TXN: "${dateStr}" -> year=${txnYear} -> date=${date} | ${rawDesc.substring(0, 30)}`);
     }
 
     // Determine amounts - ANZ format has withdrawal, deposit, then balance
@@ -264,6 +280,242 @@ export function parseANZStatement(text: string, filename: string, documentId?: s
     id: generateId(),
     filename,
     bank: 'ANZ',
+    uploadedAt: new Date().toISOString(),
+    periodStart,
+    periodEnd
+  };
+
+  return { transactions, accounts, document };
+}
+
+// ASB transaction type codes
+const ASB_TXN_TYPES: Record<string, string> = {
+  'CREDIT': 'Credit',
+  'TFR IN': 'Transfer In',
+  'TFR OUT': 'Transfer Out',
+  'AUTOPAY': 'Automatic Payment',
+  'EFTPOS': 'EFTPOS',
+  'ATM': 'ATM',
+  'D/C': 'Direct Credit',
+  'D/D': 'Direct Debit',
+  'VISA': 'Visa',
+  'FEE': 'Fee',
+  'INT': 'Interest',
+  'CHQ': 'Cheque'
+};
+
+// Parse ASB statement format
+export function parseASBStatement(text: string, filename: string, documentId?: string, pageTexts?: PageText[]): {
+  transactions: Transaction[];
+  accounts: Account[];
+  document: DocumentInfo;
+} {
+  const transactions: Transaction[] = [];
+  const accounts: Account[] = [];
+
+  console.log('Parsing ASB statement...');
+  console.log('Text sample:', text.substring(0, 500));
+
+  // Extract account number - ASB format: "12-3456-0012345-00"
+  let accountNumber = '';
+  const accountMatch = text.match(/ACCOUNT NUMBER\s+([\d-]+)/i) || text.match(/(\d{2}-\d{4}-\d{7}-\d{2})/);
+  if (accountMatch) {
+    accountNumber = accountMatch[1];
+    console.log('Found account number:', accountNumber);
+  }
+
+  // Extract statement period - ASB format: "01 Feb 2025 – 28 Feb 2025"
+  let periodStart = '';
+  let periodEnd = '';
+  const periodMatch = text.match(/STATEMENT PERIOD\s+(\d{1,2}\s+\w+\s+\d{4})\s*[–-]\s*(\d{1,2}\s+\w+\s+\d{4})/i);
+  if (periodMatch) {
+    periodStart = parseNZDate(periodMatch[1]);
+    periodEnd = parseNZDate(periodMatch[2]);
+    console.log('Found period:', periodStart, 'to', periodEnd);
+  }
+
+  // Extract account name
+  let accountName = '';
+  const nameMatch = text.match(/ACCOUNT NAME\s+([^\n]+)/i);
+  if (nameMatch) {
+    accountName = nameMatch[1].trim();
+  }
+
+  // Determine account type
+  let accountType: Account['type'] = 'everyday';
+  const textLower = text.toLowerCase();
+  if (textLower.includes('savings')) {
+    accountType = 'savings';
+  } else if (textLower.includes('credit card') || textLower.includes('visa card')) {
+    accountType = 'credit';
+  } else if (textLower.includes('loan') || textLower.includes('mortgage')) {
+    accountType = 'loan';
+  }
+
+  // Create account
+  if (accountNumber) {
+    accounts.push({
+      id: generateId(),
+      name: accountName || 'ASB Account',
+      number: accountNumber,
+      type: accountType,
+      bank: 'ASB',
+      periodStart,
+      periodEnd
+    });
+  }
+
+  // Parse transactions - ASB format with YYYY / MM / DD dates
+  // Pattern: 2025 / 02 / 03   AUTOPAY   SOUTHERN CROSS HEALTH   -$184.99   $17,469.04
+  // Or with memo: 2025 / 02 / 02   TFR IN   FLETCHER BUILDING NZ   Project payment   $5,204.03   $17,654.03
+
+  // First, try the format with spaces around slashes
+  const txnPattern1 = /(\d{4})\s*\/\s*(\d{2})\s*\/\s*(\d{2})\s+(CREDIT|TFR IN|TFR OUT|AUTOPAY|EFTPOS|ATM|D\/C|D\/D|VISA|FEE|INT|CHQ)\s+(.+?)\s+(-?\$?[\d,]+\.\d{2})\s+\$?[\d,]+\.\d{2}/gi;
+
+  // Also try without the balance column
+  const txnPattern2 = /(\d{4})\s*\/\s*(\d{2})\s*\/\s*(\d{2})\s+(CREDIT|TFR IN|TFR OUT|AUTOPAY|EFTPOS|ATM|D\/C|D\/D|VISA|FEE|INT|CHQ)\s+(.+?)\s+(-?\$?[\d,]+\.\d{2})/gi;
+
+  let match;
+  const seenTxns = new Set<string>(); // Dedupe
+
+  // Try pattern 1 first (with balance)
+  while ((match = txnPattern1.exec(text)) !== null) {
+    const [fullMatch, year, month, day, txnType, rawDesc, amountStr] = match;
+
+    const date = `${year}-${month}-${day}`;
+    const txnKey = `${date}-${txnType}-${amountStr}`;
+
+    if (seenTxns.has(txnKey)) continue;
+    seenTxns.add(txnKey);
+
+    // Skip opening/closing balance rows
+    if (rawDesc.toLowerCase().includes('opening balance') ||
+        rawDesc.toLowerCase().includes('closing balance')) {
+      continue;
+    }
+
+    // Parse amount - ASB uses -$ for debits
+    let amount = parseAmount(amountStr.replace('$', '').replace('-', ''));
+    if (amountStr.includes('-')) {
+      amount = -Math.abs(amount);
+    }
+
+    // Determine if credit based on type
+    const creditTypes = ['CREDIT', 'TFR IN', 'D/C'];
+    if (creditTypes.includes(txnType.toUpperCase()) && amount < 0) {
+      amount = Math.abs(amount);
+    }
+
+    const debitTypes = ['AUTOPAY', 'EFTPOS', 'ATM', 'D/D', 'TFR OUT', 'FEE'];
+    if (debitTypes.includes(txnType.toUpperCase()) && amount > 0) {
+      amount = -Math.abs(amount);
+    }
+
+    if (amount === 0) continue;
+
+    const desc = cleanDescription(rawDesc);
+    const category = categorizeTransaction(desc + ' ' + rawDesc, amount, txnType);
+
+    // Find page number
+    let pageNumber = 1;
+    if (pageTexts) {
+      for (const pt of pageTexts) {
+        if (pt.text.includes(rawDesc.substring(0, 30))) {
+          pageNumber = pt.pageNumber;
+          break;
+        }
+      }
+    }
+
+    const typeLabel = ASB_TXN_TYPES[txnType.toUpperCase()] || txnType;
+
+    transactions.push({
+      id: generateId(),
+      date,
+      description: `${typeLabel}: ${desc}`,
+      rawDescription: rawDesc,
+      amount,
+      type: amount > 0 ? 'credit' : 'debit',
+      category,
+      source: filename,
+      accountNumber,
+      documentId,
+      pageNumber,
+      textMatch: rawDesc.substring(0, 50)
+    });
+  }
+
+  // If no transactions found, try pattern 2
+  if (transactions.length === 0) {
+    while ((match = txnPattern2.exec(text)) !== null) {
+      const [fullMatch, year, month, day, txnType, rawDesc, amountStr] = match;
+
+      const date = `${year}-${month}-${day}`;
+      const txnKey = `${date}-${txnType}-${amountStr}`;
+
+      if (seenTxns.has(txnKey)) continue;
+      seenTxns.add(txnKey);
+
+      if (rawDesc.toLowerCase().includes('opening balance') ||
+          rawDesc.toLowerCase().includes('closing balance')) {
+        continue;
+      }
+
+      let amount = parseAmount(amountStr.replace('$', '').replace('-', ''));
+      if (amountStr.includes('-')) {
+        amount = -Math.abs(amount);
+      }
+
+      const creditTypes = ['CREDIT', 'TFR IN', 'D/C'];
+      if (creditTypes.includes(txnType.toUpperCase()) && amount < 0) {
+        amount = Math.abs(amount);
+      }
+
+      const debitTypes = ['AUTOPAY', 'EFTPOS', 'ATM', 'D/D', 'TFR OUT', 'FEE'];
+      if (debitTypes.includes(txnType.toUpperCase()) && amount > 0) {
+        amount = -Math.abs(amount);
+      }
+
+      if (amount === 0) continue;
+
+      const desc = cleanDescription(rawDesc);
+      const category = categorizeTransaction(desc + ' ' + rawDesc, amount, txnType);
+
+      let pageNumber = 1;
+      if (pageTexts) {
+        for (const pt of pageTexts) {
+          if (pt.text.includes(rawDesc.substring(0, 30))) {
+            pageNumber = pt.pageNumber;
+            break;
+          }
+        }
+      }
+
+      const typeLabel = ASB_TXN_TYPES[txnType.toUpperCase()] || txnType;
+
+      transactions.push({
+        id: generateId(),
+        date,
+        description: `${typeLabel}: ${desc}`,
+        rawDescription: rawDesc,
+        amount,
+        type: amount > 0 ? 'credit' : 'debit',
+        category,
+        source: filename,
+        accountNumber,
+        documentId,
+        pageNumber,
+        textMatch: rawDesc.substring(0, 50)
+      });
+    }
+  }
+
+  console.log(`ASB parser found ${transactions.length} transactions`);
+
+  const document: DocumentInfo = {
+    id: documentId || generateId(),
+    filename,
+    bank: 'ASB',
     uploadedAt: new Date().toISOString(),
     periodStart,
     periodEnd

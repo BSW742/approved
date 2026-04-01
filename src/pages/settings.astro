@@ -1,0 +1,247 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="Settings">
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Auth Check -->
+    <div id="auth-check" class="hidden text-center py-16">
+      <p class="text-slate-500">Checking authentication...</p>
+    </div>
+
+    <!-- Main Content -->
+    <div id="main-content" class="hidden">
+      <div class="mb-8">
+        <a href="/" class="text-slate-500 hover:text-emerald-600 text-sm flex items-center gap-1 mb-4 transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+          </svg>
+          Back to Prospects
+        </a>
+        <h1 class="text-3xl font-bold text-slate-900">Settings</h1>
+        <p class="text-slate-500 mt-1">Configure expense benchmarks for your assessments</p>
+      </div>
+
+      <!-- Household Type Selector -->
+      <div class="bg-white rounded-xl border border-slate-200 p-6 mb-6">
+        <h2 class="text-lg font-semibold text-slate-800 mb-4">Default Household Type</h2>
+        <p class="text-sm text-slate-500 mb-4">Select the default household composition for new prospects.</p>
+        <select id="default-household" class="w-full max-w-md px-4 py-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all">
+          <option value="1adult">1 Adult</option>
+          <option value="2adults">2 Adults</option>
+          <option value="1adult1child">1 Adult + 1 Child</option>
+          <option value="1adult2children">1 Adult + 2 Children</option>
+          <option value="2adults1child">2 Adults + 1 Child</option>
+          <option value="2adults2children" selected>2 Adults + 2 Children</option>
+          <option value="2adults3children">2 Adults + 3 Children</option>
+        </select>
+      </div>
+
+      <!-- Benchmarks Table -->
+      <div class="bg-white rounded-xl border border-slate-200 p-6">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h2 class="text-lg font-semibold text-slate-800">NZ Expense Benchmarks</h2>
+            <p class="text-sm text-slate-500">Monthly amounts (NZD). Click any value to edit.</p>
+          </div>
+          <button id="reset-benchmarks" class="text-sm text-slate-500 hover:text-rose-600 transition-colors flex items-center gap-1">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            Reset to Defaults
+          </button>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm" id="benchmarks-table">
+            <thead>
+              <tr class="border-b border-slate-200">
+                <th class="text-left py-3 px-2 font-semibold text-slate-700">Household Type</th>
+                <th class="text-right py-3 px-2 font-semibold text-slate-700">Groceries</th>
+                <th class="text-right py-3 px-2 font-semibold text-slate-700">Utilities</th>
+                <th class="text-right py-3 px-2 font-semibold text-slate-700">Entertainment</th>
+                <th class="text-right py-3 px-2 font-semibold text-slate-700">Insurance</th>
+                <th class="text-right py-3 px-2 font-semibold text-emerald-600 bg-emerald-50 rounded-t">Total</th>
+              </tr>
+            </thead>
+            <tbody id="benchmarks-body">
+              <!-- Populated by JS -->
+            </tbody>
+          </table>
+        </div>
+
+        <div class="mt-6 pt-4 border-t border-slate-100">
+          <p class="text-xs text-slate-400">
+            <strong>Notes:</strong> Utilities = power, internet, mobile, water. Entertainment = streaming, dining out, leisure.
+            Insurance = contents, car, health/life. <strong>Excludes:</strong> rent, mortgage, rates, transport, debt repayments.
+          </p>
+        </div>
+      </div>
+
+      <!-- Save Status -->
+      <div id="save-status" class="fixed bottom-6 right-6 hidden">
+        <div class="bg-emerald-600 text-white px-4 py-2 rounded-lg shadow-lg flex items-center gap-2">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+          </svg>
+          Saved
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    import { hasPassword } from '../lib/r2';
+    import { r2Get, r2Put, getPassword } from '../lib/r2';
+
+    // Default NZ benchmarks (weekly * 4.33 = monthly)
+    const DEFAULT_BENCHMARKS = {
+      '1adult': { groceries: 585, utilities: 238, entertainment: 281, insurance: 130 },
+      '2adults': { groceries: 953, utilities: 346, entertainment: 455, insurance: 217 },
+      '1adult1child': { groceries: 931, utilities: 325, entertainment: 390, insurance: 217 },
+      '1adult2children': { groceries: 1234, utilities: 411, entertainment: 455, insurance: 260 },
+      '2adults1child': { groceries: 1234, utilities: 411, entertainment: 520, insurance: 260 },
+      '2adults2children': { groceries: 1559, utilities: 476, entertainment: 585, insurance: 325 },
+      '2adults3children': { groceries: 1862, utilities: 541, entertainment: 650, insurance: 390 }
+    };
+
+    const HOUSEHOLD_LABELS: Record<string, string> = {
+      '1adult': '1 Adult',
+      '2adults': '2 Adults',
+      '1adult1child': '1 Adult + 1 Child',
+      '1adult2children': '1 Adult + 2 Children',
+      '2adults1child': '2 Adults + 1 Child',
+      '2adults2children': '2 Adults + 2 Children',
+      '2adults3children': '2 Adults + 3 Children'
+    };
+
+    let benchmarks = { ...DEFAULT_BENCHMARKS };
+    let defaultHousehold = '2adults2children';
+
+    const authCheck = document.getElementById('auth-check');
+    const mainContent = document.getElementById('main-content');
+    const benchmarksBody = document.getElementById('benchmarks-body');
+    const defaultHouseholdSelect = document.getElementById('default-household') as HTMLSelectElement;
+    const saveStatus = document.getElementById('save-status');
+
+    // Check auth
+    if (!hasPassword()) {
+      window.location.href = '/';
+    } else {
+      authCheck?.classList.add('hidden');
+      mainContent?.classList.remove('hidden');
+      loadSettings();
+    }
+
+    async function loadSettings() {
+      try {
+        const settings = await r2Get('settings.json');
+        if (settings) {
+          if (settings.benchmarks) {
+            benchmarks = { ...DEFAULT_BENCHMARKS, ...settings.benchmarks };
+          }
+          if (settings.defaultHousehold) {
+            defaultHousehold = settings.defaultHousehold;
+            defaultHouseholdSelect.value = defaultHousehold;
+          }
+        }
+      } catch (e) {
+        // No settings yet, use defaults
+      }
+      renderTable();
+    }
+
+    async function saveSettings() {
+      try {
+        await r2Put('settings.json', {
+          benchmarks,
+          defaultHousehold
+        });
+        showSaveStatus();
+      } catch (e) {
+        console.error('Failed to save settings:', e);
+      }
+    }
+
+    function showSaveStatus() {
+      saveStatus?.classList.remove('hidden');
+      setTimeout(() => {
+        saveStatus?.classList.add('hidden');
+      }, 2000);
+    }
+
+    function renderTable() {
+      if (!benchmarksBody) return;
+
+      const rows = Object.entries(benchmarks).map(([key, values]) => {
+        const total = values.groceries + values.utilities + values.entertainment + values.insurance;
+        return `
+          <tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors" data-household="${key}">
+            <td class="py-3 px-2 font-medium text-slate-700">${HOUSEHOLD_LABELS[key]}</td>
+            <td class="py-3 px-2 text-right">
+              <input type="number" class="benchmark-input w-20 text-right px-2 py-1 border border-transparent hover:border-slate-200 focus:border-emerald-500 rounded outline-none transition-colors"
+                     data-field="groceries" value="${values.groceries}" />
+            </td>
+            <td class="py-3 px-2 text-right">
+              <input type="number" class="benchmark-input w-20 text-right px-2 py-1 border border-transparent hover:border-slate-200 focus:border-emerald-500 rounded outline-none transition-colors"
+                     data-field="utilities" value="${values.utilities}" />
+            </td>
+            <td class="py-3 px-2 text-right">
+              <input type="number" class="benchmark-input w-20 text-right px-2 py-1 border border-transparent hover:border-slate-200 focus:border-emerald-500 rounded outline-none transition-colors"
+                     data-field="entertainment" value="${values.entertainment}" />
+            </td>
+            <td class="py-3 px-2 text-right">
+              <input type="number" class="benchmark-input w-20 text-right px-2 py-1 border border-transparent hover:border-slate-200 focus:border-emerald-500 rounded outline-none transition-colors"
+                     data-field="insurance" value="${values.insurance}" />
+            </td>
+            <td class="py-3 px-2 text-right font-semibold text-emerald-600 bg-emerald-50 total-cell">$${total.toLocaleString()}</td>
+          </tr>
+        `;
+      }).join('');
+
+      benchmarksBody.innerHTML = rows;
+
+      // Add event listeners to inputs
+      document.querySelectorAll('.benchmark-input').forEach(input => {
+        input.addEventListener('change', handleInputChange);
+        input.addEventListener('blur', handleInputChange);
+      });
+    }
+
+    function handleInputChange(e: Event) {
+      const input = e.target as HTMLInputElement;
+      const row = input.closest('tr');
+      const household = row?.dataset.household;
+      const field = input.dataset.field as keyof typeof DEFAULT_BENCHMARKS['1adult'];
+
+      if (household && field && benchmarks[household]) {
+        benchmarks[household][field] = parseInt(input.value) || 0;
+
+        // Update total
+        const values = benchmarks[household];
+        const total = values.groceries + values.utilities + values.entertainment + values.insurance;
+        const totalCell = row?.querySelector('.total-cell');
+        if (totalCell) {
+          totalCell.textContent = `$${total.toLocaleString()}`;
+        }
+
+        saveSettings();
+      }
+    }
+
+    // Default household change
+    defaultHouseholdSelect?.addEventListener('change', () => {
+      defaultHousehold = defaultHouseholdSelect.value;
+      saveSettings();
+    });
+
+    // Reset to defaults
+    document.getElementById('reset-benchmarks')?.addEventListener('click', () => {
+      if (confirm('Reset all benchmarks to default NZ values?')) {
+        benchmarks = { ...DEFAULT_BENCHMARKS };
+        renderTable();
+        saveSettings();
+      }
+    });
+  </script>
+</Layout>

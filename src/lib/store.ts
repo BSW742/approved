@@ -35,6 +35,32 @@ export interface Account {
   periodEnd?: string;
 }
 
+// Expense type classification for budget
+export type ExpenseType = 'committed' | 'regular' | 'discretionary';
+
+// Budget line item (can be from transaction or custom)
+export interface BudgetItem {
+  id: string;
+  description: string;
+  category: string;
+  transactionIds: string[];      // IDs of transactions that make up this line
+  transactionCount: number;      // How many transactions made up this line
+  totalSpent: number;            // Total amount in expense window
+  actualMonthly: number;         // totalSpent / months in window
+  proposedMonthly: number;       // Broker can edit this
+  expenseType: ExpenseType;      // Color coding
+  isCustom?: boolean;            // True if manually added
+  note?: string;                 // Broker notes on this item
+}
+
+// Budget configuration per prospect
+export interface BudgetConfig {
+  items: BudgetItem[];           // All budget line items
+  categoryDefaults: Record<string, ExpenseType>;  // Default type per category
+  notes: string;                 // Overall budget notes
+  updatedAt: string;
+}
+
 export interface Prospect {
   id: string;
   name: string;
@@ -47,6 +73,7 @@ export interface Prospect {
   transactions: Transaction[];
   documents: DocumentInfo[];
   notes?: string;
+  budget?: BudgetConfig;
 }
 
 export interface DocumentInfo {
@@ -244,4 +271,122 @@ export async function clearAllPDFs(): Promise<void> {
     tx.oncomplete = () => resolve();
     tx.onerror = () => reject(tx.error);
   });
+}
+
+// =============================================================================
+// R2 Cloud Storage Sync
+// =============================================================================
+
+import { r2Get, r2Put, r2PutPDF, r2GetRaw, r2Delete, hasPassword } from './r2';
+
+// Prospects list stored at root level
+const R2_PROSPECTS_LIST = 'prospects.json';
+
+// Prospect data stored at: prospects/{id}/data.json
+// Prospect PDFs stored at: prospects/{id}/docs/{docId}.pdf
+
+export interface ProspectListItem {
+  id: string;
+  name: string;
+  updatedAt: string;
+  documentCount: number;
+  transactionCount: number;
+}
+
+// Fetch all prospects list from R2
+export async function r2GetProspectsList(): Promise<ProspectListItem[]> {
+  try {
+    return await r2Get<ProspectListItem[]>(R2_PROSPECTS_LIST);
+  } catch (e) {
+    // File doesn't exist yet, return empty array
+    return [];
+  }
+}
+
+// Save prospects list to R2
+export async function r2SaveProspectsList(prospects: ProspectListItem[]): Promise<void> {
+  await r2Put(R2_PROSPECTS_LIST, prospects);
+}
+
+// Fetch full prospect data from R2
+export async function r2GetProspect(id: string): Promise<Prospect | null> {
+  try {
+    return await r2Get<Prospect>(`prospects/${id}/data.json`);
+  } catch (e) {
+    return null;
+  }
+}
+
+// Save full prospect data to R2
+export async function r2SaveProspect(prospect: Prospect): Promise<void> {
+  prospect.updatedAt = new Date().toISOString();
+
+  // Save the prospect data
+  await r2Put(`prospects/${prospect.id}/data.json`, prospect);
+
+  // Update the prospects list
+  const list = await r2GetProspectsList();
+  const item: ProspectListItem = {
+    id: prospect.id,
+    name: prospect.name,
+    updatedAt: prospect.updatedAt,
+    documentCount: prospect.documents.length,
+    transactionCount: prospect.transactions.length
+  };
+
+  const index = list.findIndex(p => p.id === prospect.id);
+  if (index >= 0) {
+    list[index] = item;
+  } else {
+    list.push(item);
+  }
+
+  await r2SaveProspectsList(list);
+}
+
+// Delete prospect from R2
+export async function r2DeleteProspect(id: string): Promise<void> {
+  // Delete prospect data
+  try {
+    await r2Delete(`prospects/${id}/data.json`);
+  } catch (e) {
+    // Ignore if not found
+  }
+
+  // Note: PDFs would need to be deleted individually, but we'll leave them for now
+  // as the list operation isn't authenticated
+
+  // Update the prospects list
+  const list = await r2GetProspectsList();
+  const filtered = list.filter(p => p.id !== id);
+  await r2SaveProspectsList(filtered);
+}
+
+// Save PDF to R2
+export async function r2SavePDF(prospectId: string, documentId: string, pdfData: ArrayBuffer): Promise<void> {
+  const blob = new Blob([pdfData], { type: 'application/pdf' });
+  await r2PutPDF(`prospects/${prospectId}/docs/${documentId}.pdf`, blob);
+}
+
+// Get PDF from R2
+export async function r2GetPDF(prospectId: string, documentId: string): Promise<ArrayBuffer | null> {
+  try {
+    return await r2GetRaw(`prospects/${prospectId}/docs/${documentId}.pdf`);
+  } catch (e) {
+    return null;
+  }
+}
+
+// Delete PDF from R2
+export async function r2DeletePDF(prospectId: string, documentId: string): Promise<void> {
+  try {
+    await r2Delete(`prospects/${prospectId}/docs/${documentId}.pdf`);
+  } catch (e) {
+    // Ignore if not found
+  }
+}
+
+// Check if R2 is available (user has authenticated)
+export function isR2Available(): boolean {
+  return hasPassword();
 }

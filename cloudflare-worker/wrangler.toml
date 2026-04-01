@@ -1,0 +1,7 @@
+name = "approved-upload"
+main = "approved-upload.js"
+compatibility_date = "2025-03-01"
+
+[[r2_buckets]]
+binding = "BUCKET"
+bucket_name = "approved-data"

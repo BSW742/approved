@@ -83,20 +83,18 @@ import Layout from '../layouts/Layout.astro';
             <input type="date" id="window-end" class="px-3 py-1.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none text-sm font-medium" />
           </div>
 
-          <!-- Avg Monthly Expenses -->
-          <div class="flex items-center gap-3">
-            <div class="text-right">
-              <p class="text-xs text-slate-500 uppercase tracking-wide">Avg Monthly</p>
-              <p id="avg-monthly-out" class="text-2xl font-bold text-rose-600">$0.00</p>
-            </div>
-          </div>
-
           <!-- Mode Toggle -->
-          <div class="inline-flex bg-slate-100 rounded-full p-1">
-            <button id="mode-input" class="mode-btn px-5 py-1.5 rounded-full text-sm font-medium transition-all bg-white text-emerald-600 shadow-sm">
+          <div class="inline-flex bg-slate-200 rounded-lg p-1.5 shadow-inner border border-slate-300">
+            <button id="mode-input" class="mode-btn flex items-center gap-2 px-6 py-2.5 rounded-md text-base font-semibold transition-all bg-emerald-500 text-white shadow-md">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+              </svg>
               Input
             </button>
-            <button id="mode-output" class="mode-btn px-5 py-1.5 rounded-full text-sm font-medium transition-all text-slate-500 hover:text-slate-700">
+            <button id="mode-output" class="mode-btn flex items-center gap-2 px-6 py-2.5 rounded-md text-base font-semibold transition-all text-slate-600 hover:text-slate-800 hover:bg-slate-100">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
               Output
             </button>
           </div>
@@ -110,16 +108,6 @@ import Layout from '../layouts/Layout.astro';
             <span class="text-sm">docs</span>
             <span class="text-slate-300 mx-1">|</span>
             <span id="txn-count" class="text-sm text-slate-500"></span>
-          </div>
-        </div>
-
-        <!-- Validation Panel -->
-        <div id="window-validation" class="mt-3 pt-3 border-t border-slate-100">
-          <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
-            <span id="val-duration" class="flex items-center gap-1"></span>
-            <span id="val-freshness" class="flex items-center gap-1"></span>
-            <span id="val-coverage" class="flex items-center gap-1"></span>
-            <span id="val-gaps" class="flex items-center gap-1"></span>
           </div>
         </div>
       </div>
@@ -152,6 +140,12 @@ import Layout from '../layouts/Layout.astro';
             </button>
             <button data-tab="accounts" class="tab-btn px-6 py-4 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700 whitespace-nowrap">Associated Accounts</button>
             <button data-tab="transfers" class="tab-btn px-6 py-4 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700 whitespace-nowrap">Account Transfers</button>
+            <button data-tab="income" class="tab-btn px-6 py-4 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700 whitespace-nowrap flex items-center gap-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Income
+            </button>
           </nav>
         </div>
 
@@ -344,29 +338,215 @@ import Layout from '../layouts/Layout.astro';
           </div>
         </div>
 
+        <!-- Income Tab -->
+        <div id="tab-income" class="tab-content hidden p-6">
+          <div class="max-w-3xl">
+            <div class="mb-6">
+              <h3 class="text-lg font-semibold text-slate-800 mb-1">Borrowing Capacity Calculator</h3>
+              <p class="text-sm text-slate-500">Enter monthly figures to calculate your maximum borrowing capacity</p>
+            </div>
+
+            <!-- Input Section -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+              <!-- Income Inputs -->
+              <div class="space-y-4">
+                <h4 class="font-medium text-slate-700 flex items-center gap-2">
+                  <svg class="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                  Monthly Income
+                </h4>
+                <div>
+                  <label class="block text-sm text-slate-600 mb-1">PAYE Net (after tax)</label>
+                  <div class="relative">
+                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">$</span>
+                    <input type="number" id="income-paye" class="w-full pl-8 pr-4 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none" placeholder="0.00" step="0.01" />
+                  </div>
+                </div>
+                <div>
+                  <label class="block text-sm text-slate-600 mb-1">Bonus / Other Income</label>
+                  <div class="relative">
+                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">$</span>
+                    <input type="number" id="income-bonus" class="w-full pl-8 pr-4 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none" placeholder="0.00" step="0.01" />
+                  </div>
+                </div>
+              </div>
+
+              <!-- Expense & Rate Inputs -->
+              <div class="space-y-4">
+                <h4 class="font-medium text-slate-700 flex items-center gap-2">
+                  <svg class="w-5 h-5 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4" />
+                  </svg>
+                  Monthly Expenses & Rates
+                </h4>
+                <div>
+                  <label class="block text-sm text-slate-600 mb-1">Living Expenses</label>
+                  <div class="relative">
+                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">$</span>
+                    <input type="number" id="income-expenses" class="w-full pl-8 pr-4 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none" placeholder="0.00" step="0.01" />
+                  </div>
+                </div>
+                <div>
+                  <label class="block text-sm text-slate-600 mb-1">Test Rate %</label>
+                  <div class="relative">
+                    <input type="number" id="income-test-rate" class="w-full pl-4 pr-8 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none" placeholder="7.00" step="0.01" value="7.00" />
+                    <span class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400">%</span>
+                  </div>
+                </div>
+                <div>
+                  <label class="block text-sm text-slate-600 mb-1">Minimum Deposit %</label>
+                  <div class="relative">
+                    <input type="number" id="income-deposit-pct" class="w-full pl-4 pr-8 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none" placeholder="20" step="1" value="20" min="5" max="50" />
+                    <span class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400">%</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Results Section -->
+            <div class="bg-gradient-to-br from-slate-50 to-slate-100 rounded-xl border border-slate-200 p-6">
+              <h4 class="font-semibold text-slate-800 mb-4">Annual Summary & Borrowing Capacity</h4>
+
+              <!-- Annual Breakdown -->
+              <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                <div class="bg-white rounded-lg p-4 border border-slate-200">
+                  <p class="text-xs text-slate-500 uppercase tracking-wide mb-1">Annual Income</p>
+                  <p id="calc-annual-income" class="text-xl font-bold text-emerald-600">$0</p>
+                </div>
+                <div class="bg-white rounded-lg p-4 border border-slate-200">
+                  <p class="text-xs text-slate-500 uppercase tracking-wide mb-1">Annual Expenses</p>
+                  <p id="calc-annual-expenses" class="text-xl font-bold text-rose-600">$0</p>
+                </div>
+                <div class="bg-white rounded-lg p-4 border border-slate-200">
+                  <p class="text-xs text-slate-500 uppercase tracking-wide mb-1">Annual UMI</p>
+                  <p id="calc-annual-umi" class="text-xl font-bold text-slate-700">$0</p>
+                  <p class="text-xs text-slate-400 mt-1">Uncommitted Income</p>
+                </div>
+                <div class="bg-white rounded-lg p-4 border border-slate-200">
+                  <p class="text-xs text-slate-500 uppercase tracking-wide mb-1">Monthly UMI</p>
+                  <p id="calc-monthly-umi" class="text-xl font-bold text-slate-700">$0</p>
+                </div>
+              </div>
+
+              <!-- Borrowing Capacity -->
+              <div class="bg-white rounded-xl border-2 border-emerald-200 p-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div class="text-center md:text-left">
+                    <p class="text-sm text-slate-500 mb-1">Maximum Mortgage</p>
+                    <p id="calc-max-mortgage" class="text-3xl font-bold text-emerald-600">$0</p>
+                    <p class="text-xs text-slate-400 mt-1">Annual UMI ÷ Test Rate</p>
+                  </div>
+                  <div class="text-center border-y md:border-y-0 md:border-x border-slate-200 py-4 md:py-0 md:px-6">
+                    <p class="text-sm text-slate-500 mb-1">Required Deposit</p>
+                    <p id="calc-deposit-amount" class="text-3xl font-bold text-amber-600">$0</p>
+                    <p id="calc-deposit-pct-display" class="text-xs text-slate-400 mt-1">20% of property value</p>
+                  </div>
+                  <div class="text-center md:text-right">
+                    <p class="text-sm text-slate-500 mb-1">Max Property Value</p>
+                    <p id="calc-max-property" class="text-3xl font-bold text-blue-600">$0</p>
+                    <p class="text-xs text-slate-400 mt-1">Mortgage + Deposit</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Formula Explanation -->
+              <div class="mt-6 text-sm text-slate-500">
+                <p class="font-medium text-slate-600 mb-2">How it's calculated:</p>
+                <ul class="space-y-1 list-disc list-inside">
+                  <li>UMI = (PAYE Net + Bonus) − Expenses</li>
+                  <li>Max Mortgage = Annual UMI ÷ (Test Rate ÷ 100)</li>
+                  <li>Max Property = Max Mortgage ÷ (1 − Deposit%)</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+
       </div>
 
       <!-- Output Mode Tabs -->
       <div id="output-mode" class="hidden bg-white rounded-b-xl border border-slate-200 border-t-0">
         <div class="border-b border-slate-200 overflow-x-auto">
           <nav class="flex -mb-px min-w-max">
-            <button data-output-tab="average" class="output-tab-btn active px-6 py-4 text-sm font-medium border-b-2 border-emerald-500 text-emerald-600 whitespace-nowrap">Average Expense</button>
+            <button data-output-tab="validation" class="output-tab-btn active px-6 py-4 text-sm font-medium border-b-2 border-emerald-500 text-emerald-600 whitespace-nowrap">Validation</button>
+            <button data-output-tab="average" class="output-tab-btn px-6 py-4 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700 whitespace-nowrap">Average Expense</button>
+            <button data-output-tab="benchmark" class="output-tab-btn px-6 py-4 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700 whitespace-nowrap">Benchmark</button>
             <button data-output-tab="summary" class="output-tab-btn px-6 py-4 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700 whitespace-nowrap">Application Summary</button>
             <button data-output-tab="log" class="output-tab-btn px-6 py-4 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700 whitespace-nowrap">Log</button>
+            <button data-output-tab="budget" class="output-tab-btn px-6 py-4 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700 whitespace-nowrap">Budget</button>
           </nav>
         </div>
 
-        <!-- Average Expense Tab -->
-        <div id="output-tab-average" class="output-tab-content p-6">
+        <!-- Validation Tab -->
+        <div id="output-tab-validation" class="output-tab-content p-6">
           <div class="mb-6">
+            <h3 class="text-lg font-semibold text-slate-800 mb-1">Data Validation</h3>
+            <p class="text-sm text-slate-500">Check data completeness before submitting to lender</p>
+          </div>
+
+          <!-- Overall Status -->
+          <div id="validation-overall" class="mb-6">
+            <!-- Populated by JS -->
+          </div>
+
+          <!-- Validation Checks Grid -->
+          <div id="validation-checks" class="grid gap-4 mb-6">
+            <!-- Populated by JS -->
+          </div>
+
+          <!-- Missing Accounts -->
+          <div id="validation-missing-accounts" class="hidden">
+            <h4 class="font-semibold text-slate-700 mb-3 flex items-center gap-2">
+              <svg class="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              Accounts to Request
+            </h4>
+            <div id="missing-accounts-list" class="space-y-2">
+              <!-- Populated by JS -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Average Expense Tab -->
+        <div id="output-tab-average" class="output-tab-content hidden p-6">
+          <div class="mb-8">
             <h3 class="text-lg font-semibold text-slate-800 mb-2">Average Monthly Expenses</h3>
             <p class="text-sm text-slate-500">Based on uploaded statements, here's the average monthly spending breakdown.</p>
           </div>
-          <div id="average-expense-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+
+          <!-- Pie Chart Section -->
+          <div class="flex flex-col lg:flex-row gap-8 mb-8">
+            <!-- Chart Container -->
+            <div class="flex-shrink-0 flex items-center justify-center">
+              <div class="relative">
+                <svg id="expense-pie-chart" width="320" height="320" viewBox="0 0 320 320" class="transform -rotate-90">
+                  <!-- Pie slices will be inserted here -->
+                </svg>
+                <!-- Center Label -->
+                <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                  <p class="text-sm text-slate-500 font-medium">Total Monthly</p>
+                  <p id="pie-total" class="text-3xl font-bold text-slate-800">$0</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Legend -->
+            <div class="flex-1">
+              <div id="pie-legend" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <!-- Populated by JS -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Category Cards Grid -->
+          <div id="average-expense-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 mb-6">
             <!-- Populated by JS -->
           </div>
-          <div id="expense-suggestions" class="bg-amber-50 border border-amber-200 rounded-lg p-4">
-            <h4 class="font-medium text-amber-800 mb-2 flex items-center gap-2">
+
+          <div id="expense-suggestions" class="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-5">
+            <h4 class="font-semibold text-amber-800 mb-3 flex items-center gap-2">
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
               </svg>
@@ -378,6 +558,59 @@ import Layout from '../layouts/Layout.astro';
           </div>
         </div>
 
+        <!-- Benchmark Tab -->
+        <div id="output-tab-benchmark" class="output-tab-content hidden p-6">
+          <div class="mb-6">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+              <div>
+                <h3 class="text-lg font-semibold text-slate-800 mb-1">Benchmark Comparison</h3>
+                <p class="text-sm text-slate-500">Compare spending against NZ household averages</p>
+              </div>
+              <div class="flex items-center gap-2">
+                <label class="text-sm text-slate-600">Household:</label>
+                <select id="benchmark-household" class="px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all text-sm">
+                  <option value="1adult">1 Adult</option>
+                  <option value="2adults">2 Adults</option>
+                  <option value="1adult1child">1 Adult + 1 Child</option>
+                  <option value="1adult2children">1 Adult + 2 Children</option>
+                  <option value="2adults1child">2 Adults + 1 Child</option>
+                  <option value="2adults2children" selected>2 Adults + 2 Children</option>
+                  <option value="2adults3children">2 Adults + 3 Children</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Comparison Cards -->
+          <div id="benchmark-comparison" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <!-- Populated by JS -->
+          </div>
+
+          <!-- Conclusion -->
+          <div id="benchmark-conclusion" class="rounded-xl p-6 mb-6">
+            <!-- Populated by JS -->
+          </div>
+
+          <!-- Data Coverage Warning -->
+          <div class="bg-slate-50 border border-slate-200 rounded-xl p-5">
+            <div class="flex gap-3">
+              <div class="flex-shrink-0">
+                <svg class="w-5 h-5 text-slate-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div>
+                <h4 class="font-medium text-slate-700 mb-1">Important: Incomplete Data</h4>
+                <p class="text-sm text-slate-500">
+                  Bank statements don't capture all expenses. Cash payments, direct debits from other accounts,
+                  and expenses paid by others won't appear here. This comparison shows only what's visible in the
+                  uploaded statements and may underestimate true spending.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Application Summary Tab -->
         <div id="output-tab-summary" class="output-tab-content hidden p-6">
           <div class="mb-6 flex items-center justify-between">
@@ -385,12 +618,19 @@ import Layout from '../layouts/Layout.astro';
               <h3 class="text-lg font-semibold text-slate-800 mb-2">Application Summary</h3>
               <p class="text-sm text-slate-500">Narrative summary ready to copy/paste into application forms.</p>
             </div>
-            <button id="copy-summary" class="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors text-sm font-medium">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-              </svg>
-              Copy to Clipboard
-            </button>
+            <div class="flex items-center gap-2">
+              <button id="refresh-summary" class="flex items-center gap-2 px-3 py-2 border border-slate-200 text-slate-600 rounded-lg hover:bg-slate-50 hover:border-slate-300 transition-colors text-sm font-medium" title="Regenerate summary">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+              </button>
+              <button id="copy-summary" class="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors text-sm font-medium">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
+                Copy to Clipboard
+              </button>
+            </div>
           </div>
           <div id="application-summary-content" class="bg-slate-50 rounded-lg p-6 border border-slate-200 whitespace-pre-wrap font-mono text-sm text-slate-700 max-h-[60vh] overflow-y-auto">
             <!-- Populated by JS -->
@@ -412,8 +652,116 @@ import Layout from '../layouts/Layout.astro';
             <p>No actions logged yet</p>
           </div>
         </div>
+
+        <!-- Budget Tab -->
+        <div id="output-tab-budget" class="output-tab-content hidden p-6">
+          <div class="mb-6 flex items-center justify-between">
+            <div>
+              <h3 class="text-lg font-semibold text-slate-800 mb-1">Living Budget</h3>
+              <p class="text-sm text-slate-500">Build a budget showing actual vs. proposed monthly expenses</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <button id="regenerate-budget" class="flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200 transition-colors">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                Regenerate
+              </button>
+              <button id="add-budget-item" class="flex items-center gap-2 px-4 py-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition-colors">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                </svg>
+                Add Item
+              </button>
+            </div>
+          </div>
+
+          <!-- Legend -->
+          <div class="flex items-center gap-6 mb-6 text-sm">
+            <div class="flex items-center gap-2">
+              <span class="w-4 h-4 rounded bg-orange-400"></span>
+              <span class="text-slate-600">Committed</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="w-4 h-4 rounded bg-blue-400"></span>
+              <span class="text-slate-600">Regular</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="w-4 h-4 rounded bg-slate-200 border border-slate-300"></span>
+              <span class="text-slate-600">Discretionary</span>
+            </div>
+          </div>
+
+          <!-- Budget Table -->
+          <div class="border border-slate-200 rounded-xl overflow-hidden mb-6">
+            <table class="w-full">
+              <thead class="bg-slate-50 border-b border-slate-200">
+                <tr>
+                  <th class="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase">Description</th>
+                  <th class="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase">Category</th>
+                  <th class="text-center px-4 py-3 text-xs font-semibold text-slate-500 uppercase" title="Transaction count in expense window">Freq</th>
+                  <th class="text-right px-4 py-3 text-xs font-semibold text-slate-500 uppercase" title="Total spent in expense window">Total</th>
+                  <th class="text-right px-4 py-3 text-xs font-semibold text-slate-500 uppercase" title="Total ÷ months = monthly average">Actual/mo</th>
+                  <th class="text-right px-4 py-3 text-xs font-semibold text-slate-500 uppercase">Proposed/mo</th>
+                  <th class="text-center px-4 py-3 text-xs font-semibold text-slate-500 uppercase">Type</th>
+                  <th class="px-4 py-3"></th>
+                </tr>
+              </thead>
+              <tbody id="budget-items-body">
+                <!-- Populated by JS -->
+              </tbody>
+              <tfoot class="bg-slate-50 border-t border-slate-200">
+                <tr>
+                  <td colspan="4" class="px-4 py-3 font-semibold text-slate-700">Total</td>
+                  <td id="budget-total-actual" class="text-right px-4 py-3 font-semibold text-slate-700">$0.00</td>
+                  <td id="budget-total-proposed" class="text-right px-4 py-3 font-semibold text-emerald-600">$0.00</td>
+                  <td colspan="2"></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+
+          <!-- Summary Box -->
+          <div class="bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-xl p-5 mb-6">
+            <div class="flex items-center justify-between mb-4">
+              <h4 class="font-semibold text-emerald-800">Budget Summary</h4>
+              <span id="budget-surplus" class="text-xl font-bold text-emerald-600">+$0.00/month</span>
+            </div>
+            <p id="budget-income-note" class="text-sm text-emerald-700 mb-3"></p>
+          </div>
+
+          <!-- Notes -->
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-2">Budget Notes</label>
+            <textarea id="budget-notes" rows="3" class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none" placeholder="Notes about budget adjustments (e.g., 'Client commits to reducing cafe spend by $200/month')"></textarea>
+          </div>
+        </div>
       </div>
 
+    </div>
+
+    <!-- Budget Item Note Modal -->
+    <div id="budget-note-modal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+      <div class="bg-white rounded-xl max-w-md w-full shadow-xl">
+        <div class="p-6 border-b border-slate-200">
+          <div class="flex items-center justify-between mb-2">
+            <h3 class="text-lg font-semibold text-slate-900">Add Note</h3>
+            <button id="close-budget-note-modal" class="text-slate-400 hover:text-slate-600">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+          <p id="budget-note-item-desc" class="text-sm text-slate-500"></p>
+        </div>
+        <div class="p-6">
+          <textarea id="budget-note-input" rows="4" class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none" placeholder="e.g., 'Client will cancel this subscription'"></textarea>
+        </div>
+        <div class="p-4 bg-slate-50 rounded-b-xl flex justify-end gap-2">
+          <button id="clear-budget-note" class="px-4 py-2 text-slate-600 hover:bg-slate-200 rounded-lg transition-colors">Clear</button>
+          <button id="save-budget-note" class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">Save Note</button>
+        </div>
+      </div>
     </div>
 
     <!-- Category Detail Modal -->
@@ -644,12 +992,18 @@ import Layout from '../layouts/Layout.astro';
 
   <script is:inline src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script>
-    import { getProspect, saveProspect, mergeTransactions, generateId, savePDF, getPDF, getPDFWithText, clearAllPDFs } from '../lib/store';
+    import { mergeTransactions, generateId, savePDF, getPDF, getPDFWithText, clearAllPDFs, r2GetProspect, r2SaveProspect, r2SavePDF, r2GetPDF } from '../lib/store';
     import type { Prospect, PageTextData } from '../lib/store';
     import { analyzeProspect, formatCurrency, formatDate, formatPeriod } from '../lib/analysis';
-    import { detectBank, parseANZStatement, parseWestpacStatement, parseGenericStatement } from '../lib/pdfParser';
+    import { detectBank, parseANZStatement, parseASBStatement, parseWestpacStatement, parseGenericStatement } from '../lib/pdfParser';
     import type { PageText } from '../lib/pdfParser';
     import { CATEGORY_COLORS, BENCHMARKS } from '../lib/categorize';
+    import { hasPassword, r2Get } from '../lib/r2';
+
+    // Check auth on load
+    if (!hasPassword()) {
+      window.location.href = '/';
+    }
 
     // Get PDF.js from global (loaded via CDN above)
     const pdfjsLib = (window as any).pdfjsLib;
@@ -658,7 +1012,7 @@ import Layout from '../layouts/Layout.astro';
     // Get prospect ID from URL
     const urlParams = new URLSearchParams(window.location.search);
     const prospectId = urlParams.get('id') || '';
-    let prospect: Prospect | undefined = getProspect(prospectId);
+    let prospect: Prospect | undefined;
     let currentPage = 1;
     const pageSize = 25;
 
@@ -677,9 +1031,22 @@ import Layout from '../layouts/Layout.astro';
       rawTextSample: string;
     } | null = null;
 
-    if (!prospect) {
-      window.location.href = '/';
+    // Load prospect from R2
+    async function loadProspect() {
+      try {
+        prospect = await r2GetProspect(prospectId) || undefined;
+        if (!prospect) {
+          window.location.href = '/';
+          return;
+        }
+        initializePage();
+      } catch (e) {
+        console.error('Failed to load prospect:', e);
+        window.location.href = '/';
+      }
     }
+
+    loadProspect();
 
     // Calculate default 3-month window (ending last day of previous month)
     function getDefault3MonthWindow(): { start: string; end: string } {
@@ -911,21 +1278,23 @@ import Layout from '../layouts/Layout.astro';
       }
     };
 
-    // Expense Window selectors
-    const windowStartInput = document.getElementById('window-start') as HTMLInputElement;
-    const windowEndInput = document.getElementById('window-end') as HTMLInputElement;
+    // Initialize page function - called after prospect is loaded from R2
+    function initializePage() {
+      if (!prospect) return;
 
-    windowStartInput?.addEventListener('change', () => {
+      // Expense Window selectors
+      const windowStartInput = document.getElementById('window-start') as HTMLInputElement;
+      const windowEndInput = document.getElementById('window-end') as HTMLInputElement;
+
+      windowStartInput?.addEventListener('change', () => {
       windowStart = windowStartInput.value;
       currentPage = 1;
-      renderValidation();
       renderAnalysis();
     });
 
     windowEndInput?.addEventListener('change', () => {
       windowEnd = windowEndInput.value;
       currentPage = 1;
-      renderValidation();
       renderAnalysis();
     });
 
@@ -971,25 +1340,31 @@ import Layout from '../layouts/Layout.astro';
     function switchMode(mode: 'input' | 'output') {
       currentMode = mode;
 
+      const activeClasses = ['bg-emerald-500', 'text-white', 'shadow-md'];
+      const inactiveClasses = ['text-slate-600', 'hover:text-slate-800', 'hover:bg-slate-100'];
+
       if (mode === 'input') {
-        modeInputBtn?.classList.add('bg-white', 'text-emerald-600', 'shadow-sm');
-        modeInputBtn?.classList.remove('text-slate-500');
-        modeOutputBtn?.classList.remove('bg-white', 'text-emerald-600', 'shadow-sm');
-        modeOutputBtn?.classList.add('text-slate-500');
+        modeInputBtn?.classList.add(...activeClasses);
+        modeInputBtn?.classList.remove(...inactiveClasses);
+        modeOutputBtn?.classList.remove(...activeClasses);
+        modeOutputBtn?.classList.add(...inactiveClasses);
         inputModeContainer?.classList.remove('hidden');
         outputModeContainer?.classList.add('hidden');
       } else {
-        modeOutputBtn?.classList.add('bg-white', 'text-emerald-600', 'shadow-sm');
-        modeOutputBtn?.classList.remove('text-slate-500');
-        modeInputBtn?.classList.remove('bg-white', 'text-emerald-600', 'shadow-sm');
-        modeInputBtn?.classList.add('text-slate-500');
+        modeOutputBtn?.classList.add(...activeClasses);
+        modeOutputBtn?.classList.remove(...inactiveClasses);
+        modeInputBtn?.classList.remove(...activeClasses);
+        modeInputBtn?.classList.add(...inactiveClasses);
         outputModeContainer?.classList.remove('hidden');
         inputModeContainer?.classList.add('hidden');
 
         // Render output mode content
+        renderValidationSummary();
         renderAverageExpense();
         renderApplicationSummary();
+        renderBenchmarkComparison();
         renderLog();
+        renderBudget();
       }
     }
 
@@ -1048,6 +1423,76 @@ import Layout from '../layouts/Layout.astro';
 
     // Apply on load
     applyExpensesFilter();
+
+    // Income Calculator
+    const incomePayeInput = document.getElementById('income-paye') as HTMLInputElement;
+    const incomeBonusInput = document.getElementById('income-bonus') as HTMLInputElement;
+    const incomeExpensesInput = document.getElementById('income-expenses') as HTMLInputElement;
+    const incomeTestRateInput = document.getElementById('income-test-rate') as HTMLInputElement;
+    const incomeDepositPctInput = document.getElementById('income-deposit-pct') as HTMLInputElement;
+
+    function calculateBorrowingCapacity() {
+      const monthlyPaye = parseFloat(incomePayeInput?.value || '0') || 0;
+      const monthlyBonus = parseFloat(incomeBonusInput?.value || '0') || 0;
+      const monthlyExpenses = parseFloat(incomeExpensesInput?.value || '0') || 0;
+      const testRate = parseFloat(incomeTestRateInput?.value || '7') || 7;
+      const depositPct = parseFloat(incomeDepositPctInput?.value || '20') || 20;
+
+      // Calculate annual figures
+      const annualIncome = (monthlyPaye + monthlyBonus) * 12;
+      const annualExpenses = monthlyExpenses * 12;
+      const annualUmi = annualIncome - annualExpenses;
+      const monthlyUmi = annualUmi / 12;
+
+      // Calculate borrowing capacity
+      // Max Mortgage = Annual UMI / (Test Rate / 100)
+      const maxMortgage = testRate > 0 ? annualUmi / (testRate / 100) : 0;
+
+      // Max Property = Max Mortgage / (1 - Deposit%)
+      const depositDecimal = depositPct / 100;
+      const maxProperty = depositDecimal < 1 ? maxMortgage / (1 - depositDecimal) : 0;
+      const depositAmount = maxProperty - maxMortgage;
+
+      // Update display
+      const formatCurrency = (n: number) => new Intl.NumberFormat('en-NZ', {
+        style: 'currency',
+        currency: 'NZD',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+      }).format(n);
+
+      const annualIncomeEl = document.getElementById('calc-annual-income');
+      const annualExpensesEl = document.getElementById('calc-annual-expenses');
+      const annualUmiEl = document.getElementById('calc-annual-umi');
+      const monthlyUmiEl = document.getElementById('calc-monthly-umi');
+      const maxMortgageEl = document.getElementById('calc-max-mortgage');
+      const depositAmountEl = document.getElementById('calc-deposit-amount');
+      const depositPctDisplayEl = document.getElementById('calc-deposit-pct-display');
+      const maxPropertyEl = document.getElementById('calc-max-property');
+
+      if (annualIncomeEl) annualIncomeEl.textContent = formatCurrency(annualIncome);
+      if (annualExpensesEl) annualExpensesEl.textContent = formatCurrency(annualExpenses);
+      if (annualUmiEl) {
+        annualUmiEl.textContent = formatCurrency(annualUmi);
+        annualUmiEl.className = `text-xl font-bold ${annualUmi >= 0 ? 'text-emerald-600' : 'text-rose-600'}`;
+      }
+      if (monthlyUmiEl) {
+        monthlyUmiEl.textContent = formatCurrency(monthlyUmi);
+        monthlyUmiEl.className = `text-xl font-bold ${monthlyUmi >= 0 ? 'text-emerald-600' : 'text-rose-600'}`;
+      }
+      if (maxMortgageEl) maxMortgageEl.textContent = formatCurrency(Math.max(0, maxMortgage));
+      if (depositAmountEl) depositAmountEl.textContent = formatCurrency(Math.max(0, depositAmount));
+      if (depositPctDisplayEl) depositPctDisplayEl.textContent = `${depositPct}% of property value`;
+      if (maxPropertyEl) maxPropertyEl.textContent = formatCurrency(Math.max(0, maxProperty));
+    }
+
+    // Attach event listeners to all income calculator inputs
+    [incomePayeInput, incomeBonusInput, incomeExpensesInput, incomeTestRateInput, incomeDepositPctInput].forEach(input => {
+      input?.addEventListener('input', calculateBorrowingCapacity);
+    });
+
+    // Initial calculation
+    calculateBorrowingCapacity();
 
     // Associated accounts toggle
     let associatedExpanded = false;
@@ -1195,9 +1640,16 @@ import Layout from '../layouts/Layout.astro';
         }
         console.log('Text extracted, length:', fullText.length);
 
-        // Save PDF to IndexedDB with text content for searching
+        // Save PDF to IndexedDB with text content for searching (local cache)
         onProgress?.('Saving document...');
         await savePDF(documentId, arrayBufferCopy, pageTexts);
+
+        // Also save to R2 for cloud sync
+        try {
+          await r2SavePDF(prospectId, documentId, arrayBufferCopy);
+        } catch (e) {
+          console.warn('Failed to save PDF to R2:', e);
+        }
 
         onProgress?.('Detecting bank format...');
         const bank = detectBank(fullText);
@@ -1209,6 +1661,9 @@ import Layout from '../layouts/Layout.astro';
         switch (bank) {
           case 'ANZ':
             result = parseANZStatement(fullText, file.name, documentId, pageTexts);
+            break;
+          case 'ASB':
+            result = parseASBStatement(fullText, file.name, documentId, pageTexts);
             break;
           case 'Westpac':
             result = parseWestpacStatement(fullText, file.name, documentId, pageTexts);
@@ -1233,7 +1688,6 @@ import Layout from '../layouts/Layout.astro';
           txnPerPage: result.transactions.length / pdf.numPages,
           warnings: [] as string[],
           statementPeriod: { start: result.document.periodStart, end: result.document.periodEnd },
-          datesOutsidePeriod: 0,
           rawTextSample: fullText.substring(0, 2000),
         };
 
@@ -1242,23 +1696,7 @@ import Layout from '../layouts/Layout.astro';
           validation.warnings.push(`Low extraction: Only ${validation.txnCount} transactions from ${validation.pageCount} pages (${validation.txnPerPage.toFixed(1)}/page). Expected 10-30/page.`);
         }
 
-        // Check 2: Date range validation
-        if (result.document.periodStart && result.document.periodEnd) {
-          const periodStart = result.document.periodStart;
-          const periodEnd = result.document.periodEnd;
-
-          for (const txn of result.transactions) {
-            if (txn.date && (txn.date < periodStart || txn.date > periodEnd)) {
-              validation.datesOutsidePeriod++;
-            }
-          }
-
-          if (validation.datesOutsidePeriod > 0) {
-            validation.warnings.push(`${validation.datesOutsidePeriod} transactions have dates outside statement period (${periodStart} to ${periodEnd}).`);
-          }
-        }
-
-        // Check 3: Zero transactions
+        // Check 2: Zero transactions
         if (result.transactions.length === 0) {
           validation.warnings.push('No transactions extracted. PDF format may not be supported or text extraction failed.');
           console.warn('No transactions parsed! First 2000 chars of text:', fullText.substring(0, 2000));
@@ -1284,7 +1722,7 @@ import Layout from '../layouts/Layout.astro';
         result.document.pageCount = pdf.numPages;
         prospect.documents.push(result.document);
 
-        saveProspect(prospect);
+        await r2SaveProspect(prospect);
         return result.transactions.length;
 
       } catch (error: any) {
@@ -1333,9 +1771,6 @@ import Layout from '../layouts/Layout.astro';
         if (windowStartInput) windowStartInput.value = windowStart;
         if (windowEndInput) windowEndInput.value = windowEnd;
       }
-
-      // Render validation panel
-      renderValidation();
 
       // Get filtered transactions for expense window
       const filteredTxns = getFilteredTransactions();
@@ -1455,6 +1890,11 @@ import Layout from '../layouts/Layout.astro';
 
       // Log
       renderLog();
+
+      // Output mode renders
+      renderValidationSummary();
+      renderAverageExpense();
+      renderBenchmarkComparison();
 
       // Reapply expenses filter after rendering
       applyExpensesFilter();
@@ -1660,7 +2100,7 @@ import Layout from '../layouts/Layout.astro';
             ` : ''}
           </td>
           <td class="py-3 text-center">
-            <button onclick="markAsTransfer('${txn.id}')" class="text-xs px-2 py-1 rounded border border-slate-200 hover:bg-blue-50 hover:border-blue-200 hover:text-blue-600 transition-colors opacity-0 group-hover:opacity-100" title="Mark as account transfer">
+            <button onclick="markAsTransfer('${txn.id}', event)" class="text-xs px-2 py-1 rounded border border-slate-200 hover:bg-blue-50 hover:border-blue-200 hover:text-blue-600 transition-colors opacity-0 group-hover:opacity-100" title="Mark as account transfer">
               <svg class="w-4 h-4 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
               </svg>
@@ -1748,39 +2188,93 @@ import Layout from '../layouts/Layout.astro';
       `).join('');
     }
 
+    // Pop sound effect using Web Audio API
+    function playPopSound() {
+      try {
+        const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+        const oscillator = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+
+        oscillator.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+
+        oscillator.frequency.setValueAtTime(800, audioCtx.currentTime);
+        oscillator.frequency.exponentialRampToValueAtTime(400, audioCtx.currentTime + 0.1);
+
+        gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+
+        oscillator.start(audioCtx.currentTime);
+        oscillator.stop(audioCtx.currentTime + 0.15);
+      } catch (e) {
+        // Audio not supported, fail silently
+      }
+    }
+
+    // Sparkle effect at element position
+    function sparkleAt(element: HTMLElement) {
+      const rect = element.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+
+      for (let i = 0; i < 12; i++) {
+        const sparkle = document.createElement('div');
+        sparkle.innerHTML = '✨';
+        sparkle.style.cssText = `
+          position: fixed;
+          left: ${centerX}px;
+          top: ${centerY}px;
+          font-size: 16px;
+          pointer-events: none;
+          z-index: 9999;
+          transform: translate(-50%, -50%);
+        `;
+        document.body.appendChild(sparkle);
+
+        const angle = (i / 12) * Math.PI * 2;
+        const distance = 40 + Math.random() * 30;
+        const duration = 400 + Math.random() * 200;
+
+        sparkle.animate([
+          { transform: 'translate(-50%, -50%) scale(0)', opacity: 1 },
+          { transform: `translate(calc(-50% + ${Math.cos(angle) * distance}px), calc(-50% + ${Math.sin(angle) * distance}px)) scale(1)`, opacity: 1, offset: 0.3 },
+          { transform: `translate(calc(-50% + ${Math.cos(angle) * distance * 1.5}px), calc(-50% + ${Math.sin(angle) * distance * 1.5}px)) scale(0)`, opacity: 0 }
+        ], {
+          duration,
+          easing: 'cubic-bezier(0, 0.5, 0.5, 1)'
+        }).onfinish = () => sparkle.remove();
+      }
+    }
+
     // Mark transaction as transfer
-    (window as any).markAsTransfer = (id: string) => {
+    (window as any).markAsTransfer = async (id: string, event?: Event) => {
       if (!prospect) return;
 
       const txn = prospect.transactions.find(t => t.id === id);
       if (txn) {
+        // Play feedback
+        playPopSound();
+        if (event?.target) {
+          sparkleAt(event.target as HTMLElement);
+        }
+
         txn.isTransfer = true;
         txn.transferMarkedAt = new Date().toISOString();
-        saveProspect(prospect);
-        const analysis = analyzeProspect(prospect);
-        renderTransactions();
-        renderTransfers();
-        renderCategories(analysis);
-        renderAttention(analysis);
-        renderLog();
+        await r2SaveProspect(prospect);
+        renderAnalysis(); // Updates header avg monthly + all views
       }
     };
 
     // Unmark transaction as transfer
-    (window as any).unmarkAsTransfer = (id: string) => {
+    (window as any).unmarkAsTransfer = async (id: string) => {
       if (!prospect) return;
 
       const txn = prospect.transactions.find(t => t.id === id);
       if (txn) {
         txn.isTransfer = false;
         txn.transferMarkedAt = undefined;
-        saveProspect(prospect);
-        const analysis = analyzeProspect(prospect);
-        renderTransactions();
-        renderTransfers();
-        renderCategories(analysis);
-        renderAttention(analysis);
-        renderLog();
+        await r2SaveProspect(prospect);
+        renderAnalysis(); // Updates header avg monthly + all views
       }
     };
 
@@ -1823,9 +2317,9 @@ import Layout from '../layouts/Layout.astro';
         (window as any).openNoteModal(id);
       };
 
-      markTransferBtn.onclick = () => {
+      markTransferBtn.onclick = (e) => {
         modal.classList.add('hidden');
-        (window as any).markAsTransfer(id);
+        (window as any).markAsTransfer(id, e);
       };
 
       modal.classList.remove('hidden');
@@ -1855,7 +2349,7 @@ import Layout from '../layouts/Layout.astro';
     };
 
     // Save note
-    document.getElementById('save-note-btn')?.addEventListener('click', () => {
+    document.getElementById('save-note-btn')?.addEventListener('click', async () => {
       if (!prospect || !currentNoteTransactionId) return;
 
       const input = document.getElementById('note-input') as HTMLInputElement;
@@ -1870,7 +2364,7 @@ import Layout from '../layouts/Layout.astro';
           txn.note = undefined;
           txn.noteAddedAt = undefined;
         }
-        saveProspect(prospect);
+        await r2SaveProspect(prospect);
         renderTransactions();
         renderLog();
       }
@@ -1880,40 +2374,131 @@ import Layout from '../layouts/Layout.astro';
     });
 
     // Render average expense (Output mode)
+    // Pie chart state for hover effects
+    let pieChartData: { category: string; amount: number; color: string; percentage: number }[] = [];
+
+    // Local benchmark check for pie chart
+    function getBenchmarkStatusLocal(category: string, monthlyAverage: number): 'above' | 'below' | 'normal' {
+      const benchmark = BENCHMARKS[category];
+      if (!benchmark) return 'normal';
+      if (monthlyAverage > benchmark.high) return 'above';
+      if (monthlyAverage < benchmark.low) return 'below';
+      return 'normal';
+    }
+
     function renderAverageExpense() {
       if (!prospect) return;
 
-      const analysis = analyzeProspect(prospect);
       const grid = document.getElementById('average-expense-grid');
       const suggestionList = document.getElementById('expense-suggestion-list');
+      const pieChart = document.getElementById('expense-pie-chart');
+      const pieLegend = document.getElementById('pie-legend');
+      const pieTotal = document.getElementById('pie-total');
 
-      if (!grid) return;
+      if (!grid || !pieChart) return;
 
-      // Get spending categories sorted by monthly average
-      const categories = analysis.spendingCategories
+      // Use expense window filtered transactions (same as header avg monthly)
+      const filteredTxns = getFilteredTransactions();
+
+      // Calculate months in expense window
+      const windowDays = Math.round((new Date(windowEnd).getTime() - new Date(windowStart).getTime()) / (1000 * 60 * 60 * 24)) + 1;
+      const windowMonths = Math.max(1, windowDays / 30);
+
+      // Build spending categories from filtered transactions (excluding transfers)
+      const categoryMap = new Map<string, { total: number; count: number }>();
+
+      for (const txn of filteredTxns) {
+        if (txn.amount >= 0 || txn.isTransfer) continue; // Only expenses, no transfers
+
+        const cat = txn.category || 'Uncategorised';
+        const existing = categoryMap.get(cat) || { total: 0, count: 0 };
+        existing.total += Math.abs(txn.amount);
+        existing.count++;
+        categoryMap.set(cat, existing);
+      }
+
+      // Convert to array with monthly averages
+      const categories = Array.from(categoryMap.entries())
+        .map(([category, data]) => ({
+          category,
+          total: data.total,
+          count: data.count,
+          monthlyAverage: data.total / windowMonths,
+          benchmarkStatus: getBenchmarkStatusLocal(category, data.total / windowMonths)
+        }))
         .filter(c => c.monthlyAverage > 0)
         .sort((a, b) => b.monthlyAverage - a.monthlyAverage);
 
-      grid.innerHTML = categories.map(cat => {
+      const total = categories.reduce((sum, c) => sum + c.monthlyAverage, 0);
+
+      // Update total display with animation
+      if (pieTotal) {
+        pieTotal.textContent = formatCurrency(total);
+      }
+
+      // Prepare pie chart data
+      pieChartData = categories.map(cat => ({
+        category: cat.category,
+        amount: cat.monthlyAverage,
+        color: CATEGORY_COLORS[cat.category] || '#94a3b8',
+        percentage: total > 0 ? (cat.monthlyAverage / total) * 100 : 0
+      }));
+
+      // Render animated pie chart
+      renderPieChart(pieChart, pieChartData);
+
+      // Render legend
+      if (pieLegend) {
+        pieLegend.innerHTML = pieChartData.slice(0, 8).map((item, index) => `
+          <div class="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-50 transition-colors cursor-pointer pie-legend-item" data-index="${index}">
+            <div class="w-4 h-4 rounded-full flex-shrink-0 shadow-sm" style="background-color: ${item.color}"></div>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-medium text-slate-700 truncate">${item.category}</p>
+              <p class="text-xs text-slate-500">${formatCurrency(item.amount)}/mo</p>
+            </div>
+            <span class="text-sm font-semibold text-slate-600">${item.percentage.toFixed(1)}%</span>
+          </div>
+        `).join('');
+
+        // Add hover effects to legend items
+        pieLegend.querySelectorAll('.pie-legend-item').forEach((item, index) => {
+          item.addEventListener('mouseenter', () => highlightPieSlice(index));
+          item.addEventListener('mouseleave', () => unhighlightPieSlice(index));
+        });
+      }
+
+      // Render category cards (smaller, more compact)
+      grid.innerHTML = categories.map((cat, index) => {
+        const color = CATEGORY_COLORS[cat.category] || '#94a3b8';
         const statusIcon = cat.benchmarkStatus === 'above' ?
-          '<svg class="w-4 h-4 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" /></svg>' :
+          '<svg class="w-3.5 h-3.5 text-rose-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5.293 9.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 7.414V15a1 1 0 11-2 0V7.414L6.707 9.707a1 1 0 01-1.414 0z" clip-rule="evenodd" /></svg>' :
           cat.benchmarkStatus === 'below' ?
-          '<svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>' :
+          '<svg class="w-3.5 h-3.5 text-emerald-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M14.707 10.293a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L9 12.586V5a1 1 0 012 0v7.586l2.293-2.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>' :
           '';
+        const bgClass = cat.benchmarkStatus === 'above' ? 'bg-rose-50 border-rose-100' :
+                        cat.benchmarkStatus === 'below' ? 'bg-emerald-50 border-emerald-100' : 'bg-slate-50 border-slate-100';
         const amountClass = cat.benchmarkStatus === 'above' ? 'text-rose-600' :
-                           cat.benchmarkStatus === 'below' ? 'text-emerald-600' : 'text-slate-600';
+                           cat.benchmarkStatus === 'below' ? 'text-emerald-600' : 'text-slate-700';
 
         return `
-          <div class="bg-slate-50 rounded-lg p-4 border border-slate-100">
-            <div class="flex items-center justify-between mb-2">
-              <span class="font-medium text-slate-700">${cat.category}</span>
+          <div class="rounded-xl p-3 border ${bgClass} hover:shadow-md transition-all duration-200 cursor-pointer pie-card-item"
+               data-index="${index}"
+               style="animation: fadeSlideIn 0.4s ease-out ${index * 0.05}s both">
+            <div class="flex items-center gap-2 mb-1">
+              <div class="w-2.5 h-2.5 rounded-full" style="background-color: ${color}"></div>
+              <span class="text-xs font-medium text-slate-600 truncate flex-1">${cat.category}</span>
               ${statusIcon}
             </div>
-            <p class="text-2xl font-bold ${amountClass}">${formatCurrency(cat.monthlyAverage)}</p>
-            <p class="text-xs text-slate-500 mt-1">per month average</p>
+            <p class="text-lg font-bold ${amountClass}">${formatCurrency(cat.monthlyAverage)}</p>
           </div>
         `;
       }).join('');
+
+      // Add hover effects to cards
+      grid.querySelectorAll('.pie-card-item').forEach((item, index) => {
+        item.addEventListener('mouseenter', () => highlightPieSlice(index));
+        item.addEventListener('mouseleave', () => unhighlightPieSlice(index));
+      });
 
       // Generate suggestions based on above-benchmark categories
       const suggestions: string[] = [];
@@ -1940,6 +2525,634 @@ import Layout from '../layouts/Layout.astro';
       }
     }
 
+    function renderPieChart(svg: Element, data: typeof pieChartData) {
+      const cx = 160, cy = 160, radius = 120, innerRadius = 70;
+      let currentAngle = 0;
+
+      // Clear existing content
+      svg.innerHTML = '';
+
+      // Add drop shadow filter
+      const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+      defs.innerHTML = `
+        <filter id="pie-shadow" x="-20%" y="-20%" width="140%" height="140%">
+          <feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity="0.15"/>
+        </filter>
+      `;
+      svg.appendChild(defs);
+
+      data.forEach((item, index) => {
+        const angle = (item.percentage / 100) * 360;
+        const startAngle = currentAngle;
+        const endAngle = currentAngle + angle;
+
+        // Create donut slice path
+        const path = createDonutSlice(cx, cy, radius, innerRadius, startAngle, endAngle);
+
+        const pathElement = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        pathElement.setAttribute('d', path);
+        pathElement.setAttribute('fill', item.color);
+        pathElement.setAttribute('class', 'pie-slice');
+        pathElement.setAttribute('data-index', index.toString());
+        pathElement.setAttribute('filter', 'url(#pie-shadow)');
+        pathElement.style.transformOrigin = `${cx}px ${cy}px`;
+        pathElement.style.transition = 'transform 0.2s ease-out, opacity 0.2s ease-out';
+
+        // Animate in with staggered delay
+        pathElement.style.opacity = '0';
+        pathElement.style.transform = 'scale(0.8)';
+
+        setTimeout(() => {
+          pathElement.style.opacity = '1';
+          pathElement.style.transform = 'scale(1)';
+        }, index * 80);
+
+        // Hover effects
+        pathElement.addEventListener('mouseenter', () => highlightPieSlice(index));
+        pathElement.addEventListener('mouseleave', () => unhighlightPieSlice(index));
+
+        svg.appendChild(pathElement);
+        currentAngle = endAngle;
+      });
+    }
+
+    function createDonutSlice(cx: number, cy: number, outerR: number, innerR: number, startAngle: number, endAngle: number): string {
+      // Convert to radians
+      const startRad = (startAngle - 90) * Math.PI / 180;
+      const endRad = (endAngle - 90) * Math.PI / 180;
+
+      // Calculate points
+      const x1 = cx + outerR * Math.cos(startRad);
+      const y1 = cy + outerR * Math.sin(startRad);
+      const x2 = cx + outerR * Math.cos(endRad);
+      const y2 = cy + outerR * Math.sin(endRad);
+      const x3 = cx + innerR * Math.cos(endRad);
+      const y3 = cy + innerR * Math.sin(endRad);
+      const x4 = cx + innerR * Math.cos(startRad);
+      const y4 = cy + innerR * Math.sin(startRad);
+
+      const largeArc = endAngle - startAngle > 180 ? 1 : 0;
+
+      return `M ${x1} ${y1} A ${outerR} ${outerR} 0 ${largeArc} 1 ${x2} ${y2} L ${x3} ${y3} A ${innerR} ${innerR} 0 ${largeArc} 0 ${x4} ${y4} Z`;
+    }
+
+    function highlightPieSlice(index: number) {
+      const slices = document.querySelectorAll('.pie-slice');
+      slices.forEach((slice, i) => {
+        if (i === index) {
+          (slice as HTMLElement).style.transform = 'scale(1.08)';
+          (slice as HTMLElement).style.opacity = '1';
+        } else {
+          (slice as HTMLElement).style.opacity = '0.4';
+        }
+      });
+
+      // Highlight legend item
+      const legendItems = document.querySelectorAll('.pie-legend-item');
+      legendItems.forEach((item, i) => {
+        if (i === index) {
+          (item as HTMLElement).style.backgroundColor = '#f1f5f9';
+          (item as HTMLElement).style.transform = 'scale(1.02)';
+        }
+      });
+
+      // Highlight card
+      const cards = document.querySelectorAll('.pie-card-item');
+      cards.forEach((card, i) => {
+        if (i === index) {
+          (card as HTMLElement).style.transform = 'scale(1.05)';
+          (card as HTMLElement).style.boxShadow = '0 10px 25px -5px rgba(0,0,0,0.1)';
+        } else {
+          (card as HTMLElement).style.opacity = '0.5';
+        }
+      });
+    }
+
+    function unhighlightPieSlice(index: number) {
+      const slices = document.querySelectorAll('.pie-slice');
+      slices.forEach((slice) => {
+        (slice as HTMLElement).style.transform = 'scale(1)';
+        (slice as HTMLElement).style.opacity = '1';
+      });
+
+      const legendItems = document.querySelectorAll('.pie-legend-item');
+      legendItems.forEach((item) => {
+        (item as HTMLElement).style.backgroundColor = '';
+        (item as HTMLElement).style.transform = '';
+      });
+
+      const cards = document.querySelectorAll('.pie-card-item');
+      cards.forEach((card) => {
+        (card as HTMLElement).style.transform = '';
+        (card as HTMLElement).style.boxShadow = '';
+        (card as HTMLElement).style.opacity = '';
+      });
+    }
+
+    // Default NZ benchmarks (weekly * 4.33 = monthly)
+    const DEFAULT_BENCHMARKS_DATA: Record<string, { groceries: number; utilities: number; entertainment: number; insurance: number }> = {
+      '1adult': { groceries: 585, utilities: 238, entertainment: 281, insurance: 130 },
+      '2adults': { groceries: 953, utilities: 346, entertainment: 455, insurance: 217 },
+      '1adult1child': { groceries: 931, utilities: 325, entertainment: 390, insurance: 217 },
+      '1adult2children': { groceries: 1234, utilities: 411, entertainment: 455, insurance: 260 },
+      '2adults1child': { groceries: 1234, utilities: 411, entertainment: 520, insurance: 260 },
+      '2adults2children': { groceries: 1559, utilities: 476, entertainment: 585, insurance: 325 },
+      '2adults3children': { groceries: 1862, utilities: 541, entertainment: 650, insurance: 390 }
+    };
+
+    let loadedBenchmarks = { ...DEFAULT_BENCHMARKS_DATA };
+    let selectedHousehold = '2adults2children';
+
+    // Load benchmarks from R2 settings
+    async function loadBenchmarksFromSettings() {
+      try {
+        const settings = await r2Get<{ benchmarks?: typeof DEFAULT_BENCHMARKS_DATA; defaultHousehold?: string }>('settings.json');
+        if (settings?.benchmarks) {
+          loadedBenchmarks = { ...DEFAULT_BENCHMARKS_DATA, ...settings.benchmarks };
+        }
+        if (settings?.defaultHousehold) {
+          selectedHousehold = settings.defaultHousehold;
+          const select = document.getElementById('benchmark-household') as HTMLSelectElement;
+          if (select) select.value = selectedHousehold;
+        }
+      } catch (e) {
+        // Use defaults
+      }
+    }
+
+    // Render benchmark comparison (Output mode)
+    function renderBenchmarkComparison() {
+      if (!prospect) return;
+
+      const container = document.getElementById('benchmark-comparison');
+      const conclusionEl = document.getElementById('benchmark-conclusion');
+      if (!container || !conclusionEl) return;
+
+      // Get expense window filtered transactions
+      const filteredTxns = getFilteredTransactions();
+      const windowDays = Math.round((new Date(windowEnd).getTime() - new Date(windowStart).getTime()) / (1000 * 60 * 60 * 24)) + 1;
+      const windowMonths = Math.max(1, windowDays / 30);
+
+      // Calculate actual spending by mapped category
+      const expenseTxns = filteredTxns.filter(t => t.amount < 0 && !t.isTransfer);
+
+      // Map our categories to benchmark categories (using actual category names from categorize.ts)
+      const categoryMapping: Record<string, string> = {
+        'Food': 'groceries',
+        'Utilities': 'utilities',
+        'Entertainment': 'entertainment',
+        'Insurance': 'insurance'
+      };
+
+      const actualSpending: Record<string, number> = { groceries: 0, utilities: 0, entertainment: 0, insurance: 0 };
+      const categoryPresent: Record<string, boolean> = { groceries: false, utilities: false, entertainment: false, insurance: false };
+
+      for (const txn of expenseTxns) {
+        const mappedCat = categoryMapping[txn.category];
+        if (mappedCat) {
+          actualSpending[mappedCat] += Math.abs(txn.amount);
+          categoryPresent[mappedCat] = true;
+        }
+      }
+
+      // Convert to monthly
+      Object.keys(actualSpending).forEach(key => {
+        actualSpending[key] = actualSpending[key] / windowMonths;
+      });
+
+      // Get benchmark for selected household
+      const benchmark = loadedBenchmarks[selectedHousehold] || DEFAULT_BENCHMARKS_DATA['2adults2children'];
+
+      // Build comparison cards
+      const categories = [
+        { key: 'groceries', label: 'Groceries', icon: '🛒' },
+        { key: 'utilities', label: 'Utilities', icon: '💡' },
+        { key: 'entertainment', label: 'Entertainment', icon: '🎬' },
+        { key: 'insurance', label: 'Insurance', icon: '🛡️' }
+      ];
+
+      let totalActual = 0;
+      let totalBenchmark = 0;
+      let categoriesWithData = 0;
+
+      container.innerHTML = categories.map(cat => {
+        const actual = actualSpending[cat.key];
+        const bench = benchmark[cat.key as keyof typeof benchmark];
+        const hasData = categoryPresent[cat.key];
+        const diff = actual - bench;
+        const pct = bench > 0 ? ((actual / bench) * 100) : 0;
+
+        if (hasData) {
+          totalActual += actual;
+          totalBenchmark += bench;
+          categoriesWithData++;
+        }
+
+        const barWidth = Math.min(100, pct);
+        const isOver = actual > bench;
+        const barColor = !hasData ? 'bg-slate-200' : isOver ? 'bg-rose-400' : 'bg-emerald-400';
+        const textColor = !hasData ? 'text-slate-400' : isOver ? 'text-rose-600' : 'text-emerald-600';
+
+        return `
+          <div class="bg-white border border-slate-200 rounded-xl p-5 ${!hasData ? 'opacity-60' : ''}">
+            <div class="flex items-center justify-between mb-3">
+              <div class="flex items-center gap-2">
+                <span class="text-xl">${cat.icon}</span>
+                <span class="font-medium text-slate-700">${cat.label}</span>
+              </div>
+              ${!hasData ? '<span class="text-xs text-slate-400 bg-slate-100 px-2 py-1 rounded">No data</span>' : ''}
+            </div>
+
+            <div class="flex items-end justify-between mb-2">
+              <div>
+                <p class="text-2xl font-bold ${hasData ? 'text-slate-800' : 'text-slate-400'}">${formatCurrency(actual)}</p>
+                <p class="text-xs text-slate-500">Actual / month</p>
+              </div>
+              <div class="text-right">
+                <p class="text-lg font-semibold text-slate-500">${formatCurrency(bench)}</p>
+                <p class="text-xs text-slate-400">Benchmark</p>
+              </div>
+            </div>
+
+            <!-- Progress bar -->
+            <div class="h-2 bg-slate-100 rounded-full overflow-hidden mb-2">
+              <div class="${barColor} h-full rounded-full transition-all duration-500" style="width: ${barWidth}%"></div>
+            </div>
+
+            <p class="text-sm ${textColor} font-medium">
+              ${!hasData ? 'No transactions found' :
+                isOver ? `${formatCurrency(Math.abs(diff))} over benchmark` :
+                `${formatCurrency(Math.abs(diff))} under benchmark`}
+            </p>
+          </div>
+        `;
+      }).join('');
+
+      // Render conclusion
+      const overallPct = totalBenchmark > 0 ? (totalActual / totalBenchmark) * 100 : 0;
+      const isOverall = totalActual > totalBenchmark;
+
+      let conclusionClass, conclusionIcon, conclusionTitle, conclusionText;
+
+      if (categoriesWithData === 0) {
+        conclusionClass = 'bg-slate-50 border-slate-200';
+        conclusionIcon = '📊';
+        conclusionTitle = 'Insufficient Data';
+        conclusionText = 'No matching expense categories found in the uploaded statements. Upload more statements or check transaction categorisation.';
+      } else if (overallPct < 80) {
+        conclusionClass = 'bg-emerald-50 border-emerald-200';
+        conclusionIcon = '✅';
+        conclusionTitle = 'Below Average Spender';
+        conclusionText = `Based on ${categoriesWithData} tracked categories, spending is ${(100 - overallPct).toFixed(0)}% below the NZ benchmark. This suggests conservative spending habits, though some expenses may not be captured in these statements.`;
+      } else if (overallPct <= 120) {
+        conclusionClass = 'bg-blue-50 border-blue-200';
+        conclusionIcon = '📊';
+        conclusionTitle = 'Average Spender';
+        conclusionText = `Based on ${categoriesWithData} tracked categories, spending is within 20% of the NZ benchmark. This indicates typical spending patterns for a ${selectedHousehold.replace(/(\d)(adult|child)/g, '$1 $2').replace(/children/g, ' children')} household.`;
+      } else {
+        conclusionClass = 'bg-amber-50 border-amber-200';
+        conclusionIcon = '⚠️';
+        conclusionTitle = 'Above Average Spender';
+        conclusionText = `Based on ${categoriesWithData} tracked categories, spending is ${(overallPct - 100).toFixed(0)}% above the NZ benchmark. Consider reviewing discretionary spending, though some categories may include legitimate business or unusual expenses.`;
+      }
+
+      conclusionEl.className = `rounded-xl p-6 mb-6 border ${conclusionClass}`;
+      conclusionEl.innerHTML = `
+        <div class="flex gap-4">
+          <span class="text-3xl">${conclusionIcon}</span>
+          <div>
+            <h4 class="font-semibold text-slate-800 text-lg mb-1">${conclusionTitle}</h4>
+            <p class="text-slate-600">${conclusionText}</p>
+            ${categoriesWithData < 4 ? `<p class="text-sm text-slate-500 mt-2"><strong>Note:</strong> Only ${categoriesWithData} of 4 benchmark categories had matching transactions.</p>` : ''}
+          </div>
+        </div>
+      `;
+    }
+
+    // Render validation summary (Output mode)
+    function renderValidationSummary() {
+      if (!prospect) return;
+
+      const overallEl = document.getElementById('validation-overall');
+      const checksEl = document.getElementById('validation-checks');
+      const missingAccountsEl = document.getElementById('validation-missing-accounts');
+      const missingAccountsListEl = document.getElementById('missing-accounts-list');
+
+      if (!overallEl || !checksEl) return;
+
+      const checks: { label: string; status: 'pass' | 'warn' | 'fail'; detail: string; icon: string }[] = [];
+
+      // Get analysis data
+      const analysis = analyzeProspect(prospect);
+      const filteredTxns = getFilteredTransactions();
+      const allTxns = prospect.transactions;
+
+      // Calculate window info
+      const windowStartDate = new Date(windowStart);
+      const windowEndDate = new Date(windowEnd);
+      const windowDays = Math.round((windowEndDate.getTime() - windowStartDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+      const windowMonths = windowDays / 30;
+
+      // 1. Do we have 3 months of data?
+      const dataMonths = analysis.period.months;
+      if (dataMonths >= 3) {
+        checks.push({
+          label: 'Statement Duration',
+          status: 'pass',
+          detail: `${dataMonths.toFixed(1)} months of data available`,
+          icon: '📅'
+        });
+      } else if (dataMonths >= 2) {
+        checks.push({
+          label: 'Statement Duration',
+          status: 'warn',
+          detail: `Only ${dataMonths.toFixed(1)} months - lenders typically require 3 months`,
+          icon: '📅'
+        });
+      } else {
+        checks.push({
+          label: 'Statement Duration',
+          status: 'fail',
+          detail: `Only ${dataMonths.toFixed(1)} months - need at least 3 months for most lenders`,
+          icon: '📅'
+        });
+      }
+
+      // 2. Was it recent enough?
+      const today = new Date();
+      const lastTxnDate = new Date(analysis.period.end);
+      const daysSinceLastTxn = Math.round((today.getTime() - lastTxnDate.getTime()) / (1000 * 60 * 60 * 24));
+
+      if (daysSinceLastTxn <= 30) {
+        checks.push({
+          label: 'Data Recency',
+          status: 'pass',
+          detail: `Last transaction ${daysSinceLastTxn} days ago`,
+          icon: '🕐'
+        });
+      } else if (daysSinceLastTxn <= 60) {
+        checks.push({
+          label: 'Data Recency',
+          status: 'warn',
+          detail: `Last transaction ${daysSinceLastTxn} days ago - may need updated statements`,
+          icon: '🕐'
+        });
+      } else {
+        checks.push({
+          label: 'Data Recency',
+          status: 'fail',
+          detail: `Last transaction ${daysSinceLastTxn} days ago - statements are stale`,
+          icon: '🕐'
+        });
+      }
+
+      // 3. Expense window coverage
+      const txnsInWindow = filteredTxns.length;
+      const expenseTxnsInWindow = filteredTxns.filter(t => t.amount < 0 && !t.isTransfer).length;
+
+      // Check for gaps - are there days with no transactions?
+      const txnDates = new Set(filteredTxns.map(t => t.date.split('T')[0]));
+      const daysWithTxns = txnDates.size;
+      const coveragePercent = Math.round((daysWithTxns / windowDays) * 100);
+
+      if (coveragePercent >= 60) {
+        checks.push({
+          label: 'Window Coverage',
+          status: 'pass',
+          detail: `${txnsInWindow} transactions across ${daysWithTxns} days (${coveragePercent}% coverage)`,
+          icon: '📊'
+        });
+      } else if (coveragePercent >= 30) {
+        checks.push({
+          label: 'Window Coverage',
+          status: 'warn',
+          detail: `Only ${coveragePercent}% day coverage - possible gaps in statements`,
+          icon: '📊'
+        });
+      } else {
+        checks.push({
+          label: 'Window Coverage',
+          status: 'fail',
+          detail: `Low coverage (${coveragePercent}%) - likely missing statements`,
+          icon: '📊'
+        });
+      }
+
+      // 4. Benchmark category coverage
+      const categoryMapping: Record<string, string> = {
+        'Food': 'groceries',
+        'Utilities': 'utilities',
+        'Entertainment': 'entertainment',
+        'Insurance': 'insurance'
+      };
+
+      const expenseTxns = filteredTxns.filter(t => t.amount < 0 && !t.isTransfer);
+      const categoriesFound = new Set<string>();
+      for (const txn of expenseTxns) {
+        const mapped = categoryMapping[txn.category];
+        if (mapped) categoriesFound.add(mapped);
+      }
+
+      const benchmarkCategories = ['groceries', 'utilities', 'entertainment', 'insurance'];
+      const missingCategories = benchmarkCategories.filter(c => !categoriesFound.has(c));
+
+      if (missingCategories.length === 0) {
+        checks.push({
+          label: 'Benchmark Categories',
+          status: 'pass',
+          detail: 'All 4 benchmark categories have transaction data',
+          icon: '🏷️'
+        });
+      } else if (missingCategories.length <= 2) {
+        checks.push({
+          label: 'Benchmark Categories',
+          status: 'warn',
+          detail: `Missing: ${missingCategories.join(', ')}`,
+          icon: '🏷️'
+        });
+      } else {
+        checks.push({
+          label: 'Benchmark Categories',
+          status: 'fail',
+          detail: `Missing ${missingCategories.length} of 4 categories: ${missingCategories.join(', ')}`,
+          icon: '🏷️'
+        });
+      }
+
+      // 5. Account transfer analysis - are we missing linked accounts?
+      const transferTxns = allTxns.filter(t => t.isTransfer);
+      const transferAccounts = new Map<string, { name: string; moneyIn: number; moneyOut: number; count: number }>();
+
+      for (const txn of transferTxns) {
+        // Try to extract account info from description
+        const desc = txn.description;
+        const key = desc.toLowerCase().replace(/[^a-z0-9]/g, '').substring(0, 30);
+
+        if (!transferAccounts.has(key)) {
+          transferAccounts.set(key, { name: desc, moneyIn: 0, moneyOut: 0, count: 0 });
+        }
+        const acc = transferAccounts.get(key)!;
+        if (txn.amount > 0) {
+          acc.moneyIn += txn.amount;
+        } else {
+          acc.moneyOut += Math.abs(txn.amount);
+        }
+        acc.count++;
+      }
+
+      // Check for one-way transfers (money going out but no matching account data)
+      const outboundOnlyAccounts = Array.from(transferAccounts.values())
+        .filter(a => a.moneyOut > 500 && a.moneyIn === 0);
+
+      if (transferTxns.length === 0) {
+        checks.push({
+          label: 'Transfer Analysis',
+          status: 'pass',
+          detail: 'No account transfers marked',
+          icon: '🔄'
+        });
+      } else if (outboundOnlyAccounts.length === 0) {
+        checks.push({
+          label: 'Transfer Analysis',
+          status: 'pass',
+          detail: `${transferTxns.length} transfers marked - accounts appear balanced`,
+          icon: '🔄'
+        });
+      } else {
+        checks.push({
+          label: 'Transfer Analysis',
+          status: 'warn',
+          detail: `${outboundOnlyAccounts.length} accounts receiving money but not providing statements`,
+          icon: '🔄'
+        });
+      }
+
+      // 6. Associated accounts analysis - which accounts should we request?
+      const missingAccounts: { name: string; reason: string; amount: number }[] = [];
+
+      // Check associated accounts that only show as outbound (receiving money from this account)
+      for (const acc of analysis.associatedAccounts) {
+        // If money is flowing OUT to this account but we have no statement from it
+        if (acc.moneyOut > 1000 && acc.moneyOut > acc.moneyIn * 2) {
+          missingAccounts.push({
+            name: acc.name + (acc.accountNumber ? ` (${acc.accountNumber})` : ''),
+            reason: 'Money transferred to this account',
+            amount: acc.moneyOut
+          });
+        }
+      }
+
+      // Also flag credit card accounts that might need statements
+      const creditCardPatterns = ['visa', 'mastercard', 'credit card', 'amex', 'q card', 'gem'];
+      const creditCardTxns = allTxns.filter(t =>
+        creditCardPatterns.some(p => t.description.toLowerCase().includes(p)) && t.amount < 0
+      );
+      const totalCreditCardPayments = creditCardTxns.reduce((sum, t) => sum + Math.abs(t.amount), 0);
+
+      if (totalCreditCardPayments > 500) {
+        missingAccounts.push({
+          name: 'Credit Card Statement(s)',
+          reason: 'Regular credit card payments detected',
+          amount: totalCreditCardPayments
+        });
+      }
+
+      // Render overall status
+      const passCount = checks.filter(c => c.status === 'pass').length;
+      const warnCount = checks.filter(c => c.status === 'warn').length;
+      const failCount = checks.filter(c => c.status === 'fail').length;
+
+      let overallStatus: 'ready' | 'review' | 'incomplete';
+      let overallClass: string;
+      let overallIcon: string;
+      let overallTitle: string;
+      let overallText: string;
+
+      if (failCount === 0 && warnCount === 0) {
+        overallStatus = 'ready';
+        overallClass = 'bg-emerald-50 border-emerald-200';
+        overallIcon = '✅';
+        overallTitle = 'Data Looks Complete';
+        overallText = 'All validation checks passed. Data appears ready for lender submission.';
+      } else if (failCount === 0) {
+        overallStatus = 'review';
+        overallClass = 'bg-amber-50 border-amber-200';
+        overallIcon = '⚠️';
+        overallTitle = 'Review Recommended';
+        overallText = `${warnCount} item${warnCount > 1 ? 's' : ''} may need attention before submission.`;
+      } else {
+        overallStatus = 'incomplete';
+        overallClass = 'bg-rose-50 border-rose-200';
+        overallIcon = '❌';
+        overallTitle = 'Data Incomplete';
+        overallText = `${failCount} critical issue${failCount > 1 ? 's' : ''} found. Additional statements likely required.`;
+      }
+
+      overallEl.innerHTML = `
+        <div class="rounded-xl p-5 border ${overallClass}">
+          <div class="flex gap-4">
+            <span class="text-3xl">${overallIcon}</span>
+            <div>
+              <h4 class="font-semibold text-slate-800 text-lg mb-1">${overallTitle}</h4>
+              <p class="text-slate-600">${overallText}</p>
+            </div>
+          </div>
+        </div>
+      `;
+
+      // Render checks
+      checksEl.innerHTML = checks.map(check => {
+        let statusClass: string;
+        let statusIcon: string;
+
+        if (check.status === 'pass') {
+          statusClass = 'bg-emerald-50 border-emerald-200';
+          statusIcon = '<svg class="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>';
+        } else if (check.status === 'warn') {
+          statusClass = 'bg-amber-50 border-amber-200';
+          statusIcon = '<svg class="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>';
+        } else {
+          statusClass = 'bg-rose-50 border-rose-200';
+          statusIcon = '<svg class="w-5 h-5 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>';
+        }
+
+        return `
+          <div class="flex items-start gap-4 p-4 rounded-lg border ${statusClass}">
+            <span class="text-xl">${check.icon}</span>
+            <div class="flex-1">
+              <div class="flex items-center justify-between">
+                <h4 class="font-medium text-slate-800">${check.label}</h4>
+                ${statusIcon}
+              </div>
+              <p class="text-sm text-slate-600 mt-1">${check.detail}</p>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      // Render missing accounts
+      if (missingAccounts.length > 0 && missingAccountsEl && missingAccountsListEl) {
+        missingAccountsEl.classList.remove('hidden');
+        missingAccountsListEl.innerHTML = missingAccounts.map(acc => `
+          <div class="flex items-center justify-between p-3 bg-amber-50 border border-amber-200 rounded-lg">
+            <div>
+              <p class="font-medium text-slate-800">${acc.name}</p>
+              <p class="text-sm text-slate-500">${acc.reason}</p>
+            </div>
+            <span class="text-amber-700 font-medium">$${acc.amount.toLocaleString()}</span>
+          </div>
+        `).join('');
+      } else if (missingAccountsEl) {
+        missingAccountsEl.classList.add('hidden');
+      }
+    }
+
+    // Benchmark household selector
+    document.getElementById('benchmark-household')?.addEventListener('change', (e) => {
+      selectedHousehold = (e.target as HTMLSelectElement).value;
+      renderBenchmarkComparison();
+    });
+
     // Render application summary (Output mode)
     function renderApplicationSummary() {
       if (!prospect) return;
@@ -1952,32 +3165,43 @@ import Layout from '../layouts/Layout.astro';
       const months = analysis.period.months;
       const periodStr = `${formatDate(analysis.period.start)} to ${formatDate(analysis.period.end)}`;
 
+      // Use expense window filtered data (same as pie chart)
+      const filteredTxns = getFilteredTransactions();
+      const windowDays = Math.round((new Date(windowEnd).getTime() - new Date(windowStart).getTime()) / (1000 * 60 * 60 * 24)) + 1;
+      const windowMonths = Math.max(1, windowDays / 30);
+
+      // Calculate expenses from filtered transactions (excluding transfers)
+      const expenseTxns = filteredTxns.filter(t => t.amount < 0 && !t.isTransfer);
+      const totalExpenses = expenseTxns.reduce((sum, t) => sum + Math.abs(t.amount), 0);
+      const avgMonthlyExpenses = totalExpenses / windowMonths;
+
+      // Build expense window period string
+      const windowPeriodStr = `${formatDate(windowStart)} to ${formatDate(windowEnd)}`;
+
       // Build narrative summary
-      let summary = `APPLICANT FINANCIAL SUMMARY\n`;
-      summary += `===========================\n\n`;
+      let summary = `APPLICANT EXPENSE SUMMARY\n`;
+      summary += `=========================\n\n`;
       summary += `Applicant: ${prospect.name}\n`;
-      summary += `Analysis Period: ${periodStr} (${months} month${months !== 1 ? 's' : ''})\n\n`;
+      summary += `Analysis Period: ${windowPeriodStr} (${windowMonths.toFixed(1)} months)\n\n`;
 
-      summary += `INCOME SUMMARY\n`;
-      summary += `--------------\n`;
-      if (analysis.moneyInSummary.salary.monthly > 0) {
-        summary += `Salary: ${formatCurrency(analysis.moneyInSummary.salary.monthly)}/month\n`;
-      }
-      if (analysis.moneyInSummary.governmentSupport.monthly > 0) {
-        summary += `Government Support: ${formatCurrency(analysis.moneyInSummary.governmentSupport.monthly)}/month\n`;
-      }
-      if (analysis.moneyInSummary.otherMoneyIn.monthly > 0) {
-        summary += `Other Income: ${formatCurrency(analysis.moneyInSummary.otherMoneyIn.monthly)}/month\n`;
-      }
-      summary += `\n`;
+      summary += `MONTHLY EXPENSES\n`;
+      summary += `----------------\n`;
+      summary += `Average Monthly Expenses: ${formatCurrency(avgMonthlyExpenses)}\n\n`;
 
-      summary += `EXPENSE SUMMARY\n`;
-      summary += `---------------\n`;
-      const totalMonthlyExpenses = analysis.spendingCategories.reduce((sum, c) => sum + c.monthlyAverage, 0);
-      summary += `Total Monthly Expenses: ${formatCurrency(totalMonthlyExpenses)}\n\n`;
+      // Build categories from filtered transactions
+      const categoryMap = new Map<string, number>();
+      for (const txn of expenseTxns) {
+        const cat = txn.category || 'Uncategorised';
+        categoryMap.set(cat, (categoryMap.get(cat) || 0) + Math.abs(txn.amount));
+      }
 
       // Top spending categories
-      const topCategories = analysis.spendingCategories
+      const topCategories = Array.from(categoryMap.entries())
+        .map(([category, total]) => ({
+          category,
+          monthlyAverage: total / windowMonths,
+          benchmarkStatus: getBenchmarkStatusLocal(category, total / windowMonths)
+        }))
         .filter(c => c.monthlyAverage > 0)
         .sort((a, b) => b.monthlyAverage - a.monthlyAverage)
         .slice(0, 6);
@@ -2035,6 +3259,18 @@ import Layout from '../layouts/Layout.astro';
           }
         } catch (err) {
           console.error('Failed to copy:', err);
+        }
+      });
+
+      // Refresh button - regenerate summary
+      document.getElementById('refresh-summary')?.addEventListener('click', () => {
+        const btn = document.getElementById('refresh-summary');
+        if (btn) {
+          btn.classList.add('animate-spin');
+          setTimeout(() => {
+            renderApplicationSummary();
+            btn.classList.remove('animate-spin');
+          }, 300);
         }
       });
     }
@@ -2102,6 +3338,558 @@ import Layout from '../layouts/Layout.astro';
       }
     }
 
+    // =============================================================================
+    // Budget Tab Logic
+    // =============================================================================
+
+    // Default category-to-expense-type mapping
+    const DEFAULT_EXPENSE_TYPES: Record<string, 'committed' | 'regular' | 'discretionary'> = {
+      // Committed (Orange) - fixed obligations
+      'Utilities': 'committed',
+      'Rates': 'committed',
+      'Insurance': 'committed',
+      'Debt repayments': 'committed',
+      'Accommodation costs': 'committed',
+      'Child support': 'committed',
+
+      // Regular (Blue) - recurring subscriptions
+      'Childcare & education': 'regular',
+      'Medical costs': 'regular',
+      'Tithing': 'regular',
+
+      // Discretionary (White) - variable/lifestyle
+      'ATM withdrawals': 'discretionary',
+      'Clothing, shoes & personal care': 'discretionary',
+      'Donations': 'discretionary',
+      'Entertainment': 'discretionary',
+      'Financial services': 'discretionary',
+      'Food': 'discretionary',
+      'Government and professional services': 'discretionary',
+      'Household': 'discretionary',
+      'Transport': 'discretionary',
+      'Uncategorised': 'discretionary',
+    };
+
+    type ExpenseType = 'committed' | 'regular' | 'discretionary';
+
+    interface BudgetItem {
+      id: string;
+      description: string;
+      category: string;
+      transactionIds: string[];
+      transactionCount: number;
+      totalSpent: number;
+      actualMonthly: number;
+      proposedMonthly: number;
+      expenseType: ExpenseType;
+      isCustom?: boolean;
+      note?: string;
+    }
+
+    interface BudgetConfig {
+      items: BudgetItem[];
+      categoryDefaults: Record<string, ExpenseType>;
+      notes: string;
+      updatedAt: string;
+    }
+
+    // Initialize budget from transaction data if not exists
+    function initializeBudget(): BudgetConfig {
+      if (!prospect) return { items: [], categoryDefaults: { ...DEFAULT_EXPENSE_TYPES }, notes: '', updatedAt: new Date().toISOString() };
+
+      // If budget exists, return it
+      if (prospect.budget) {
+        return prospect.budget;
+      }
+
+      // Create initial budget - aggregate transactions by description
+      const filteredTxns = getFilteredTransactions();
+      const windowDays = Math.round((new Date(windowEnd).getTime() - new Date(windowStart).getTime()) / (1000 * 60 * 60 * 24)) + 1;
+      const windowMonths = Math.max(1, windowDays / 30);
+
+      // Group by description (case-insensitive)
+      const descriptionMap = new Map<string, {
+        description: string;
+        category: string;
+        total: number;
+        count: number;
+        txnIds: string[];
+      }>();
+
+      for (const txn of filteredTxns) {
+        if (txn.amount >= 0 || txn.isTransfer) continue; // Only expenses, no transfers
+
+        const key = txn.description.toLowerCase().trim();
+        const existing = descriptionMap.get(key);
+
+        if (existing) {
+          existing.total += Math.abs(txn.amount);
+          existing.count++;
+          existing.txnIds.push(txn.id);
+        } else {
+          descriptionMap.set(key, {
+            description: txn.description, // Keep original case
+            category: txn.category || 'Uncategorised',
+            total: Math.abs(txn.amount),
+            count: 1,
+            txnIds: [txn.id]
+          });
+        }
+      }
+
+      // Convert to budget items
+      const items: BudgetItem[] = [];
+
+      for (const data of descriptionMap.values()) {
+        const monthlyAvg = data.total / windowMonths;
+
+        items.push({
+          id: generateId(),
+          description: data.description,
+          category: data.category,
+          transactionIds: data.txnIds,
+          transactionCount: data.count,
+          totalSpent: Math.round(data.total * 100) / 100,
+          actualMonthly: Math.round(monthlyAvg * 100) / 100,
+          proposedMonthly: Math.round(monthlyAvg * 100) / 100,
+          expenseType: DEFAULT_EXPENSE_TYPES[data.category] || 'discretionary',
+          isCustom: false
+        });
+      }
+
+      // Sort by actualMonthly descending (biggest expenses first)
+      items.sort((a, b) => b.actualMonthly - a.actualMonthly);
+
+      const budget: BudgetConfig = {
+        items,
+        categoryDefaults: { ...DEFAULT_EXPENSE_TYPES },
+        notes: '',
+        updatedAt: new Date().toISOString()
+      };
+
+      // Save to prospect
+      prospect.budget = budget;
+      r2SaveProspect(prospect);
+
+      return budget;
+    }
+
+    // Render budget table
+    function renderBudget() {
+      if (!prospect) return;
+
+      const budget = initializeBudget();
+      const tbody = document.getElementById('budget-items-body');
+      const totalActualEl = document.getElementById('budget-total-actual');
+      const totalProposedEl = document.getElementById('budget-total-proposed');
+      const totalVarianceEl = document.getElementById('budget-total-variance');
+      const surplusEl = document.getElementById('budget-surplus');
+      const incomeNoteEl = document.getElementById('budget-income-note');
+      const notesTextarea = document.getElementById('budget-notes') as HTMLTextAreaElement;
+
+      if (!tbody) return;
+
+      // Calculate income (for summary)
+      const filteredTxns = getFilteredTransactions();
+      const windowDays = Math.round((new Date(windowEnd).getTime() - new Date(windowStart).getTime()) / (1000 * 60 * 60 * 24)) + 1;
+      const windowMonths = Math.max(1, windowDays / 30);
+      const moneyIn = filteredTxns.filter(t => t.amount > 0 && !t.isTransfer).reduce((sum, t) => sum + t.amount, 0);
+      const monthlyIncome = moneyIn / windowMonths;
+
+      // Render rows
+      tbody.innerHTML = budget.items.map(item => {
+        // Row colors based on expense type
+        let rowClasses = 'border-b border-slate-100 hover:bg-slate-50/50';
+        let borderClass = 'border-l-4';
+        if (item.expenseType === 'committed') {
+          rowClasses = 'bg-orange-50/50 border-b border-orange-100 hover:bg-orange-50';
+          borderClass += ' border-l-orange-400';
+        } else if (item.expenseType === 'regular') {
+          rowClasses = 'bg-blue-50/50 border-b border-blue-100 hover:bg-blue-50';
+          borderClass += ' border-l-blue-400';
+        } else {
+          borderClass += ' border-l-slate-200';
+        }
+
+        // Flag one-off transactions (count of 1)
+        const isOneOff = !item.isCustom && item.transactionCount === 1;
+        const hasTransactions = !item.isCustom && item.transactionIds && item.transactionIds.length > 0;
+
+        return `
+          <tr class="${rowClasses} ${borderClass}" data-item-id="${item.id}">
+            <td class="px-4 py-3 text-sm text-slate-700">
+              <div class="flex items-center gap-2">
+                ${hasTransactions ? `
+                  <button class="budget-expand-btn text-slate-400 hover:text-slate-600 transition-colors" data-item-id="${item.id}" title="Show transactions">
+                    <svg class="w-4 h-4 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                ` : '<span class="w-4"></span>'}
+                ${item.isCustom ? `
+                  <span class="text-xs bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded">Custom</span>
+                  <input type="text" class="budget-desc-input flex-1 px-2 py-1 border border-slate-200 rounded text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
+                    value="${item.description.replace(/"/g, '&quot;')}"
+                    data-item-id="${item.id}" />
+                ` : `
+                  <span>${item.description}</span>
+                `}
+                ${item.note ? '<span class="text-purple-400" title="' + item.note.replace(/"/g, '&quot;') + '">💬</span>' : ''}
+              </div>
+            </td>
+            <td class="px-4 py-3 text-sm text-slate-500">${item.category}</td>
+            <td class="px-4 py-3 text-center text-sm ${isOneOff ? 'text-amber-600 font-medium' : 'text-slate-600'}">
+              ${item.isCustom ? '-' : item.transactionCount + 'x'}
+              ${isOneOff ? '<span class="ml-1" title="One-off - may not recur">⚠️</span>' : ''}
+            </td>
+            <td class="px-4 py-3 text-right text-sm text-slate-500">${item.isCustom ? '-' : formatCurrency(item.totalSpent)}</td>
+            <td class="px-4 py-3 text-right text-sm text-slate-700">${formatCurrency(item.actualMonthly)}</td>
+            <td class="px-4 py-3 text-right">
+              <input type="number" step="0.01" min="0"
+                class="budget-proposed-input w-24 text-right px-2 py-1 border border-slate-200 rounded text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
+                value="${item.proposedMonthly.toFixed(2)}"
+                data-item-id="${item.id}" />
+            </td>
+            <td class="px-4 py-3 text-center">
+              <select class="budget-type-select text-xs px-2 py-1 border border-slate-200 rounded focus:ring-2 focus:ring-emerald-500 outline-none" data-item-id="${item.id}">
+                <option value="committed" ${item.expenseType === 'committed' ? 'selected' : ''}>Committed</option>
+                <option value="regular" ${item.expenseType === 'regular' ? 'selected' : ''}>Regular</option>
+                <option value="discretionary" ${item.expenseType === 'discretionary' ? 'selected' : ''}>Discretionary</option>
+              </select>
+            </td>
+            <td class="px-4 py-3 text-center flex items-center justify-center gap-1">
+              <button class="budget-note-btn ${item.note ? 'text-purple-500' : 'text-slate-300'} hover:text-purple-600 transition-colors" data-item-id="${item.id}" title="${item.note ? 'Edit note' : 'Add note'}">
+                <svg class="w-5 h-5" fill="${item.note ? 'currentColor' : 'none'}" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+                </svg>
+              </button>
+              <button class="budget-delete-btn text-slate-300 hover:text-rose-500 transition-colors" data-item-id="${item.id}">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </td>
+          </tr>
+          <tr class="budget-txn-row hidden" data-parent-id="${item.id}">
+            <td colspan="8" class="px-4 py-0">
+              <div class="budget-txn-content bg-slate-50 rounded-lg my-2 p-3 text-sm"></div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      // Calculate totals
+      const totalActual = budget.items.reduce((sum, item) => sum + item.actualMonthly, 0);
+      const totalProposed = budget.items.reduce((sum, item) => sum + item.proposedMonthly, 0);
+      const totalVariance = totalActual - totalProposed;
+
+      if (totalActualEl) totalActualEl.textContent = formatCurrency(totalActual);
+      if (totalProposedEl) totalProposedEl.textContent = formatCurrency(totalProposed);
+      if (totalVarianceEl) {
+        totalVarianceEl.textContent = (totalVariance > 0 ? '+' : '') + formatCurrency(totalVariance);
+        totalVarianceEl.className = `text-right px-4 py-3 font-semibold ${totalVariance > 0 ? 'text-emerald-600' : totalVariance < 0 ? 'text-rose-600' : 'text-slate-500'}`;
+      }
+
+      // Summary
+      const surplus = monthlyIncome - totalProposed;
+      if (surplusEl) {
+        surplusEl.textContent = (surplus >= 0 ? '+' : '') + formatCurrency(surplus) + '/month';
+        surplusEl.className = `text-xl font-bold ${surplus >= 0 ? 'text-emerald-600' : 'text-rose-600'}`;
+      }
+      if (incomeNoteEl) {
+        incomeNoteEl.textContent = `Based on ${formatCurrency(monthlyIncome)}/month income from expense window`;
+      }
+
+      // Notes
+      if (notesTextarea && budget.notes) {
+        notesTextarea.value = budget.notes;
+      }
+
+      // Attach event listeners
+      attachBudgetEventListeners();
+    }
+
+    // Attach event listeners to budget elements
+    function attachBudgetEventListeners() {
+      // Proposed amount inputs
+      document.querySelectorAll('.budget-proposed-input').forEach(input => {
+        input.addEventListener('change', (e) => {
+          const target = e.target as HTMLInputElement;
+          const itemId = target.dataset.itemId;
+          const value = parseFloat(target.value) || 0;
+          updateBudgetProposed(itemId!, value);
+        });
+      });
+
+      // Type selects
+      document.querySelectorAll('.budget-type-select').forEach(select => {
+        select.addEventListener('change', (e) => {
+          const target = e.target as HTMLSelectElement;
+          const itemId = target.dataset.itemId;
+          const value = target.value as ExpenseType;
+          updateBudgetType(itemId!, value);
+        });
+      });
+
+      // Delete buttons
+      document.querySelectorAll('.budget-delete-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const target = (e.currentTarget as HTMLElement);
+          const itemId = target.dataset.itemId;
+          deleteBudgetItem(itemId!);
+        });
+      });
+
+      // Note buttons
+      document.querySelectorAll('.budget-note-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const target = (e.currentTarget as HTMLElement);
+          const itemId = target.dataset.itemId;
+          openBudgetNoteModal(itemId!);
+        });
+      });
+
+      // Expand buttons (show underlying transactions)
+      document.querySelectorAll('.budget-expand-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const target = (e.currentTarget as HTMLElement);
+          const itemId = target.dataset.itemId;
+          toggleBudgetTransactions(itemId!, target);
+        });
+      });
+
+      // Description inputs (for custom items)
+      document.querySelectorAll('.budget-desc-input').forEach(input => {
+        input.addEventListener('change', (e) => {
+          const target = e.target as HTMLInputElement;
+          const itemId = target.dataset.itemId;
+          updateBudgetDescription(itemId!, target.value);
+        });
+      });
+
+      // Notes textarea
+      const notesTextarea = document.getElementById('budget-notes') as HTMLTextAreaElement;
+      notesTextarea?.addEventListener('change', () => {
+        if (!prospect || !prospect.budget) return;
+        prospect.budget.notes = notesTextarea.value;
+        prospect.budget.updatedAt = new Date().toISOString();
+        r2SaveProspect(prospect);
+      });
+    }
+
+    // Budget note modal state
+    let currentBudgetNoteItemId: string | null = null;
+
+    function openBudgetNoteModal(itemId: string) {
+      if (!prospect || !prospect.budget) return;
+
+      const item = prospect.budget.items.find(i => i.id === itemId);
+      if (!item) return;
+
+      currentBudgetNoteItemId = itemId;
+
+      const modal = document.getElementById('budget-note-modal');
+      const descEl = document.getElementById('budget-note-item-desc');
+      const inputEl = document.getElementById('budget-note-input') as HTMLTextAreaElement;
+
+      if (descEl) descEl.textContent = `${item.description} - ${item.category}`;
+      if (inputEl) inputEl.value = item.note || '';
+
+      modal?.classList.remove('hidden');
+      inputEl?.focus();
+    }
+
+    function closeBudgetNoteModal() {
+      document.getElementById('budget-note-modal')?.classList.add('hidden');
+      currentBudgetNoteItemId = null;
+    }
+
+    function saveBudgetNote() {
+      if (!prospect || !prospect.budget || !currentBudgetNoteItemId) return;
+
+      const inputEl = document.getElementById('budget-note-input') as HTMLTextAreaElement;
+      const note = inputEl?.value.trim() || '';
+
+      const item = prospect.budget.items.find(i => i.id === currentBudgetNoteItemId);
+      if (item) {
+        item.note = note || undefined;
+        prospect.budget.updatedAt = new Date().toISOString();
+        r2SaveProspect(prospect);
+        renderBudget();
+      }
+
+      closeBudgetNoteModal();
+    }
+
+    function clearBudgetNote() {
+      const inputEl = document.getElementById('budget-note-input') as HTMLTextAreaElement;
+      if (inputEl) inputEl.value = '';
+    }
+
+    // Budget note modal event listeners
+    document.getElementById('close-budget-note-modal')?.addEventListener('click', closeBudgetNoteModal);
+    document.getElementById('save-budget-note')?.addEventListener('click', saveBudgetNote);
+    document.getElementById('clear-budget-note')?.addEventListener('click', clearBudgetNote);
+    document.getElementById('budget-note-modal')?.addEventListener('click', (e) => {
+      if (e.target === e.currentTarget) closeBudgetNoteModal();
+    });
+
+    // Update proposed amount
+    function updateBudgetProposed(itemId: string, value: number) {
+      if (!prospect || !prospect.budget) return;
+
+      const item = prospect.budget.items.find(i => i.id === itemId);
+      if (item) {
+        item.proposedMonthly = Math.round(value * 100) / 100;
+        prospect.budget.updatedAt = new Date().toISOString();
+        r2SaveProspect(prospect);
+        renderBudget();
+      }
+    }
+
+    // Update expense type
+    function updateBudgetType(itemId: string, type: ExpenseType) {
+      if (!prospect || !prospect.budget) return;
+
+      const item = prospect.budget.items.find(i => i.id === itemId);
+      if (item) {
+        item.expenseType = type;
+        prospect.budget.updatedAt = new Date().toISOString();
+        r2SaveProspect(prospect);
+        renderBudget();
+      }
+    }
+
+    // Delete budget item
+    function deleteBudgetItem(itemId: string) {
+      if (!prospect || !prospect.budget) return;
+
+      prospect.budget.items = prospect.budget.items.filter(i => i.id !== itemId);
+      prospect.budget.updatedAt = new Date().toISOString();
+      r2SaveProspect(prospect);
+      renderBudget();
+    }
+
+    // Add custom budget item
+    function addCustomBudgetItem() {
+      if (!prospect) return;
+
+      if (!prospect.budget) {
+        initializeBudget();
+      }
+
+      const newItem: BudgetItem = {
+        id: generateId(),
+        description: 'New expense',
+        category: 'Uncategorised',
+        transactionIds: [],
+        transactionCount: 0,
+        totalSpent: 0,
+        actualMonthly: 0,
+        proposedMonthly: 0,
+        expenseType: 'discretionary',
+        isCustom: true
+      };
+
+      prospect.budget!.items.push(newItem);
+      prospect.budget!.updatedAt = new Date().toISOString();
+      r2SaveProspect(prospect);
+      renderBudget();
+
+      // Focus the new row's description input
+      setTimeout(() => {
+        const row = document.querySelector(`tr[data-item-id="${newItem.id}"]`);
+        const descInput = row?.querySelector('.budget-desc-input') as HTMLInputElement;
+        if (descInput) {
+          descInput.focus();
+          descInput.select();
+        }
+      }, 100);
+    }
+
+    // Add item button handler
+    document.getElementById('add-budget-item')?.addEventListener('click', addCustomBudgetItem);
+
+    // Toggle transaction details expansion
+    function toggleBudgetTransactions(itemId: string, btn: HTMLElement) {
+      if (!prospect || !prospect.budget) return;
+
+      const item = prospect.budget.items.find(i => i.id === itemId);
+      if (!item || !item.transactionIds || item.transactionIds.length === 0) return;
+
+      const txnRow = document.querySelector(`tr.budget-txn-row[data-parent-id="${itemId}"]`);
+      const contentEl = txnRow?.querySelector('.budget-txn-content');
+      const svgIcon = btn.querySelector('svg');
+
+      if (!txnRow || !contentEl) return;
+
+      const isExpanded = !txnRow.classList.contains('hidden');
+
+      if (isExpanded) {
+        // Collapse
+        txnRow.classList.add('hidden');
+        svgIcon?.classList.remove('rotate-90');
+      } else {
+        // Expand - populate with transaction details
+        const txns = prospect.transactions.filter(t => item.transactionIds.includes(t.id));
+        txns.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+        contentEl.innerHTML = `
+          <div class="text-xs text-slate-500 mb-2">
+            ${txns.length} transaction${txns.length !== 1 ? 's' : ''} totaling ${formatCurrency(item.totalSpent)} over expense window
+          </div>
+          <table class="w-full text-xs">
+            <thead>
+              <tr class="text-slate-500 border-b border-slate-200">
+                <th class="text-left py-1 font-medium">Date</th>
+                <th class="text-left py-1 font-medium">Description</th>
+                <th class="text-right py-1 font-medium">Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${txns.map(txn => `
+                <tr class="border-b border-slate-100">
+                  <td class="py-1.5 text-slate-600">${formatDate(txn.date)}</td>
+                  <td class="py-1.5 text-slate-700">${txn.description}</td>
+                  <td class="py-1.5 text-right text-slate-700">${formatCurrency(Math.abs(txn.amount))}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        `;
+
+        txnRow.classList.remove('hidden');
+        svgIcon?.classList.add('rotate-90');
+      }
+    }
+
+    // Update description for custom items
+    function updateBudgetDescription(itemId: string, description: string) {
+      if (!prospect || !prospect.budget) return;
+
+      const item = prospect.budget.items.find(i => i.id === itemId);
+      if (item && item.isCustom) {
+        item.description = description.trim() || 'New expense';
+        prospect.budget.updatedAt = new Date().toISOString();
+        r2SaveProspect(prospect);
+      }
+    }
+
+    // Regenerate budget from transactions (clears existing budget)
+    function regenerateBudget() {
+      if (!prospect) return;
+      if (!confirm('This will replace your current budget with fresh data from transactions. Continue?')) return;
+
+      // Clear existing budget
+      delete prospect.budget;
+
+      // Re-initialize and render
+      initializeBudget();
+      renderBudget();
+    }
+
+    document.getElementById('regenerate-budget')?.addEventListener('click', regenerateBudget);
+
     // PDF Viewer state
     let currentPdfDoc: any = null;
     let currentPdfPage = 1;
@@ -2134,8 +3922,16 @@ import Layout from '../layouts/Layout.astro';
       document.getElementById('pdf-modal-subtitle')!.textContent = `Page ${txn.pageNumber || 1} • ${txn.description}`;
 
       try {
-        // Get PDF from IndexedDB
-        const pdfData = await getPDF(txn.documentId);
+        // Get PDF from IndexedDB (local cache) or fall back to R2
+        let pdfData = await getPDF(txn.documentId);
+        if (!pdfData) {
+          // Try to fetch from R2
+          pdfData = await r2GetPDF(prospectId, txn.documentId);
+          if (pdfData) {
+            // Cache locally for next time
+            await savePDF(txn.documentId, pdfData, []);
+          }
+        }
         if (!pdfData) {
           alert('PDF document not found. It may have been uploaded before this feature was added.');
           modal.classList.add('hidden');
@@ -2395,7 +4191,15 @@ import Layout from '../layouts/Layout.astro';
       document.getElementById('pdf-modal-subtitle')!.textContent = `Page ${pageNumber} • Search result`;
 
       try {
-        const pdfData = await getPDF(docId);
+        let pdfData = await getPDF(docId);
+        if (!pdfData) {
+          // Try to fetch from R2
+          pdfData = await r2GetPDF(prospectId, docId);
+          if (pdfData) {
+            // Cache locally for next time
+            await savePDF(docId, pdfData, []);
+          }
+        }
         if (!pdfData) {
           alert('PDF not found');
           modal.classList.add('hidden');
@@ -2427,14 +4231,14 @@ import Layout from '../layouts/Layout.astro';
       if (!confirmed) return;
 
       try {
-        // Clear IndexedDB
+        // Clear IndexedDB (local cache)
         await clearAllPDFs();
 
         // Clear prospect data
         prospect.transactions = [];
         prospect.documents = [];
         prospect.accounts = [];
-        saveProspect(prospect);
+        await r2SaveProspect(prospect);
 
         // Re-render
         renderAnalysis();
@@ -2532,7 +4336,10 @@ import Layout from '../layouts/Layout.astro';
       renderTransactions();
     };
 
-    // Initial render
-    renderAnalysis();
+      // Load benchmark settings and render
+      loadBenchmarksFromSettings().then(() => {
+        renderAnalysis();
+      });
+    }
   </script>
 </Layout>
