@@ -1795,10 +1795,6 @@ import Layout from '../layouts/Layout.astro';
       const windowMonths = Math.max(1, windowDays / 30);
       document.getElementById('monthly-in')!.textContent = `${formatCurrency(moneyIn / windowMonths)}/month avg`;
 
-      // Show average monthly expenses
-      const avgMonthlyExpense = moneyOut / windowMonths;
-      document.getElementById('avg-monthly-out')!.textContent = formatCurrency(avgMonthlyExpense);
-
       const net = moneyIn - moneyOut;
       const netEl = document.getElementById('net-position')!;
       netEl.textContent = formatCurrency(net, true);
