@@ -132,6 +132,53 @@ const { title } = Astro.props;
       .pie-card-item {
         transition: all 0.2s ease-out;
       }
+
+      /* Spending Profile styles */
+      .sp-slider {
+        -webkit-appearance: none;
+        appearance: none;
+        height: 6px;
+        border-radius: 3px;
+        background: #e2e8f0;
+        outline: none;
+      }
+
+      .sp-slider::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #10b981 0%, #14b8a6 100%);
+        cursor: pointer;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+      }
+
+      .sp-slider::-webkit-slider-thumb:hover {
+        transform: scale(1.1);
+        box-shadow: 0 3px 8px rgba(16, 185, 129, 0.4);
+      }
+
+      .sp-slider::-moz-range-thumb {
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #10b981 0%, #14b8a6 100%);
+        cursor: pointer;
+        border: none;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+      }
+
+      .sp-category-items {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.3s ease-out;
+      }
+
+      .sp-category-items.open {
+        max-height: 2000px;
+      }
     </style>
   </body>
 </html>

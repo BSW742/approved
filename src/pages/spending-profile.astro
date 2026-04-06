@@ -1,0 +1,505 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="Spending Profile">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Header -->
+    <div class="mb-8">
+      <a href="/" class="text-slate-500 hover:text-emerald-600 text-sm flex items-center gap-1 mb-4 transition-colors">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+        </svg>
+        Back to Prospects
+      </a>
+      <h1 class="text-3xl font-bold text-slate-900">Spending Profile</h1>
+      <p class="text-slate-500 mt-1">Map your spending across life categories to see where your money goes</p>
+    </div>
+
+    <!-- Two-panel layout -->
+    <div class="flex flex-col lg:flex-row gap-8">
+      <!-- Left: Category sliders -->
+      <div class="flex-1 space-y-4" id="categories-container">
+        <!-- Categories will be populated by JS -->
+      </div>
+
+      <!-- Right: Visualization (sticky on desktop) -->
+      <div class="lg:w-96 lg:sticky lg:top-24 lg:self-start space-y-6">
+        <!-- Total Weekly Spend -->
+        <div class="bg-white rounded-xl border border-slate-200 p-6">
+          <div class="text-center">
+            <p class="text-sm font-medium text-slate-500 uppercase tracking-wide">Total Weekly Spend</p>
+            <p class="text-4xl font-bold text-slate-900 mt-2" id="total-weekly">$0</p>
+            <p class="text-sm text-slate-400 mt-1"><span id="total-monthly">$0</span>/month</p>
+          </div>
+        </div>
+
+        <!-- Donut Chart -->
+        <div class="bg-white rounded-xl border border-slate-200 p-6">
+          <h3 class="text-sm font-medium text-slate-500 uppercase tracking-wide mb-4 text-center">Spending Distribution</h3>
+          <div class="relative">
+            <svg id="donut-chart" viewBox="0 0 200 200" class="w-full max-w-[240px] mx-auto">
+              <!-- Donut segments will be drawn by JS -->
+            </svg>
+          </div>
+        </div>
+
+        <!-- Category Breakdown -->
+        <div class="bg-white rounded-xl border border-slate-200 p-6">
+          <h3 class="text-sm font-medium text-slate-500 uppercase tracking-wide mb-4">Category Breakdown</h3>
+          <div class="space-y-3" id="breakdown-list">
+            <!-- Will be populated by JS -->
+          </div>
+        </div>
+
+        <!-- Reset Button -->
+        <button id="reset-all" class="w-full py-3 px-4 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors text-sm font-medium flex items-center justify-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+          Reset to Defaults
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <style is:global>
+    /* Custom range slider styling */
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      height: 6px;
+      border-radius: 3px;
+      background: #e2e8f0;
+      outline: none;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #10b981 0%, #14b8a6 100%);
+      cursor: pointer;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    input[type="range"]::-webkit-slider-thumb:hover {
+      transform: scale(1.1);
+      box-shadow: 0 3px 8px rgba(16, 185, 129, 0.4);
+    }
+
+    input[type="range"]::-moz-range-thumb {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #10b981 0%, #14b8a6 100%);
+      cursor: pointer;
+      border: none;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+    }
+
+    /* Category accordion animation */
+    .category-items {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease-out;
+    }
+
+    .category-items.open {
+      max-height: 2000px;
+    }
+
+    /* Donut chart transitions */
+    .donut-segment {
+      transition: opacity 0.2s ease;
+    }
+
+    .donut-segment:hover {
+      opacity: 0.8;
+    }
+  </style>
+
+  <script>
+    // Category definitions with sensible NZ defaults ($/week)
+    const SPENDING_CATEGORIES = {
+      'Home & Utilities': {
+        color: '#f97316', // orange
+        items: {
+          'Food & Groceries': 180,
+          'Mortgage / Rent': 450,
+          'Rates / Body Corporate': 60,
+          'Maintenance': 20,
+          'Electricity': 45,
+          'Gas': 15,
+          'Water': 20,
+          'Internet, Landline & Mobile': 40,
+          'Pay TV': 15,
+          'Other': 0
+        }
+      },
+      'Transport': {
+        color: '#22c55e', // green
+        items: {
+          'Public Transport': 30,
+          'Petrol': 60,
+          'Parking': 10,
+          'Repairs & Maintenance': 20,
+          'WOF & Registration': 10,
+          'Other': 0
+        }
+      },
+      'Insurance & Financial': {
+        color: '#06b6d4', // cyan
+        items: {
+          'Car Insurance': 25,
+          'Home & Contents Insurance': 20,
+          'Life Insurance': 30,
+          'Health Insurance': 40,
+          'Loan / Credit Card Repayments': 0,
+          'Donations / Charity': 10,
+          'Savings': 50,
+          'Other': 0
+        }
+      },
+      'Personal & Medical': {
+        color: '#ec4899', // pink
+        items: {
+          'Clothing & Shoes': 30,
+          'Hair & Beauty': 15,
+          'Education': 20,
+          'Gym / Sports': 20,
+          'Doctors & Medical': 15,
+          'Other': 0
+        }
+      },
+      'Children & Pets': {
+        color: '#8b5cf6', // purple
+        items: {
+          'Babysitting & Childcare': 0,
+          'School & Activity Fees': 0,
+          'Child Support Payments': 0,
+          'Pet Care & Vet': 20,
+          'Other': 0
+        }
+      },
+      'Entertainment': {
+        color: '#a855f7', // violet
+        items: {
+          'Cafes & Bars': 40,
+          'Restaurants & Take-Aways': 50,
+          'Cigarettes & Alcohol': 0,
+          'Books & Magazines': 10,
+          'Movies & Music': 20,
+          'Holidays': 50,
+          'Other': 0
+        }
+      }
+    };
+
+    // State
+    let spendingData: Record<string, Record<string, number>> = {};
+    let openCategory: string | null = 'Home & Utilities';
+
+    // Initialize spending data from defaults
+    function initializeData() {
+      for (const [category, config] of Object.entries(SPENDING_CATEGORIES)) {
+        spendingData[category] = { ...config.items };
+      }
+    }
+
+    // Calculate category total
+    function getCategoryTotal(category: string): number {
+      return Object.values(spendingData[category] || {}).reduce((sum, val) => sum + val, 0);
+    }
+
+    // Calculate grand total
+    function getGrandTotal(): number {
+      return Object.keys(spendingData).reduce((sum, cat) => sum + getCategoryTotal(cat), 0);
+    }
+
+    // Format currency
+    function formatCurrency(amount: number): string {
+      return '$' + amount.toLocaleString('en-NZ');
+    }
+
+    // Render category accordion
+    function renderCategories() {
+      const container = document.getElementById('categories-container');
+      if (!container) return;
+
+      container.innerHTML = Object.entries(SPENDING_CATEGORIES).map(([category, config]) => {
+        const total = getCategoryTotal(category);
+        const isOpen = openCategory === category;
+
+        return `
+          <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <!-- Category Header -->
+            <button
+              class="w-full px-6 py-4 flex items-center justify-between hover:bg-slate-50 transition-colors"
+              data-category="${category}"
+              onclick="toggleCategory('${category}')"
+            >
+              <div class="flex items-center gap-3">
+                <div class="w-3 h-3 rounded-full" style="background-color: ${config.color}"></div>
+                <span class="font-semibold text-slate-800">${category}</span>
+              </div>
+              <div class="flex items-center gap-4">
+                <span class="text-lg font-semibold text-slate-700">${formatCurrency(total)}<span class="text-sm font-normal text-slate-400">/wk</span></span>
+                <svg class="w-5 h-5 text-slate-400 transition-transform ${isOpen ? 'rotate-180' : ''}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+            </button>
+
+            <!-- Category Items -->
+            <div class="category-items ${isOpen ? 'open' : ''}" id="items-${category.replace(/\s+/g, '-')}">
+              <div class="px-6 pb-6 space-y-4 border-t border-slate-100 pt-4">
+                ${Object.entries(config.items).map(([item, defaultValue]) => {
+                  const value = spendingData[category]?.[item] ?? defaultValue;
+                  return `
+                    <div class="space-y-2">
+                      <div class="flex items-center justify-between">
+                        <label class="text-sm text-slate-600">${item}</label>
+                        <div class="flex items-center gap-2">
+                          <span class="text-sm font-medium text-slate-700 w-16 text-right">${formatCurrency(value)}</span>
+                          <input
+                            type="number"
+                            value="${value}"
+                            min="0"
+                            max="500"
+                            step="10"
+                            class="w-20 px-2 py-1 text-sm text-right border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
+                            data-category="${category}"
+                            data-item="${item}"
+                            onchange="updateFromInput(this)"
+                          />
+                        </div>
+                      </div>
+                      <input
+                        type="range"
+                        min="0"
+                        max="500"
+                        step="10"
+                        value="${value}"
+                        class="w-full"
+                        data-category="${category}"
+                        data-item="${item}"
+                        oninput="updateFromSlider(this)"
+                      />
+                    </div>
+                  `;
+                }).join('')}
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Toggle category accordion
+    (window as any).toggleCategory = function(category: string) {
+      openCategory = openCategory === category ? null : category;
+      renderCategories();
+    };
+
+    // Update from slider
+    (window as any).updateFromSlider = function(slider: HTMLInputElement) {
+      const category = slider.dataset.category!;
+      const item = slider.dataset.item!;
+      const value = parseInt(slider.value);
+
+      spendingData[category][item] = value;
+
+      // Update corresponding number input
+      const numberInput = document.querySelector(`input[type="number"][data-category="${category}"][data-item="${item}"]`) as HTMLInputElement;
+      if (numberInput) numberInput.value = value.toString();
+
+      // Update display value
+      const container = slider.closest('.space-y-2');
+      const displaySpan = container?.querySelector('.font-medium');
+      if (displaySpan) displaySpan.textContent = formatCurrency(value);
+
+      // Update category total in header
+      updateCategoryHeader(category);
+
+      // Update visualization
+      updateVisualization();
+    };
+
+    // Update from number input
+    (window as any).updateFromInput = function(input: HTMLInputElement) {
+      const category = input.dataset.category!;
+      const item = input.dataset.item!;
+      let value = parseInt(input.value) || 0;
+
+      // Clamp to valid range
+      value = Math.max(0, Math.min(500, value));
+      input.value = value.toString();
+
+      spendingData[category][item] = value;
+
+      // Update corresponding slider
+      const slider = document.querySelector(`input[type="range"][data-category="${category}"][data-item="${item}"]`) as HTMLInputElement;
+      if (slider) slider.value = value.toString();
+
+      // Update display value
+      const container = input.closest('.space-y-2');
+      const displaySpan = container?.querySelector('.font-medium');
+      if (displaySpan) displaySpan.textContent = formatCurrency(value);
+
+      // Update category total in header
+      updateCategoryHeader(category);
+
+      // Update visualization
+      updateVisualization();
+    };
+
+    // Update category header total
+    function updateCategoryHeader(category: string) {
+      const total = getCategoryTotal(category);
+      const button = document.querySelector(`button[data-category="${category}"]`);
+      if (button) {
+        const totalSpan = button.querySelector('.text-lg');
+        if (totalSpan) {
+          totalSpan.innerHTML = `${formatCurrency(total)}<span class="text-sm font-normal text-slate-400">/wk</span>`;
+        }
+      }
+    }
+
+    // Update visualization
+    function updateVisualization() {
+      const total = getGrandTotal();
+
+      // Update totals
+      const totalWeekly = document.getElementById('total-weekly');
+      const totalMonthly = document.getElementById('total-monthly');
+      if (totalWeekly) totalWeekly.textContent = formatCurrency(total);
+      if (totalMonthly) totalMonthly.textContent = formatCurrency(Math.round(total * 4.33));
+
+      // Update donut chart
+      renderDonutChart();
+
+      // Update breakdown list
+      renderBreakdownList();
+    }
+
+    // Render donut chart
+    function renderDonutChart() {
+      const svg = document.getElementById('donut-chart');
+      if (!svg) return;
+
+      const total = getGrandTotal();
+      if (total === 0) {
+        svg.innerHTML = `
+          <circle cx="100" cy="100" r="70" fill="none" stroke="#e2e8f0" stroke-width="30" />
+          <text x="100" y="105" text-anchor="middle" class="text-lg font-semibold fill-slate-400">No spend</text>
+        `;
+        return;
+      }
+
+      const cx = 100, cy = 100, radius = 70;
+      let currentAngle = -90; // Start from top
+
+      const segments = Object.entries(SPENDING_CATEGORIES)
+        .map(([category, config]) => ({
+          category,
+          color: config.color,
+          value: getCategoryTotal(category),
+          percentage: (getCategoryTotal(category) / total) * 100
+        }))
+        .filter(s => s.value > 0);
+
+      let paths = '';
+
+      segments.forEach(segment => {
+        const angle = (segment.value / total) * 360;
+        const startAngle = currentAngle;
+        const endAngle = currentAngle + angle;
+
+        // Calculate arc path
+        const startRad = (startAngle * Math.PI) / 180;
+        const endRad = (endAngle * Math.PI) / 180;
+
+        const x1 = cx + radius * Math.cos(startRad);
+        const y1 = cy + radius * Math.sin(startRad);
+        const x2 = cx + radius * Math.cos(endRad);
+        const y2 = cy + radius * Math.sin(endRad);
+
+        const largeArc = angle > 180 ? 1 : 0;
+
+        paths += `
+          <path
+            class="donut-segment"
+            d="M ${cx} ${cy} L ${x1} ${y1} A ${radius} ${radius} 0 ${largeArc} 1 ${x2} ${y2} Z"
+            fill="${segment.color}"
+            data-category="${segment.category}"
+          />
+        `;
+
+        currentAngle = endAngle;
+      });
+
+      // Add white center circle for donut effect
+      paths += `<circle cx="${cx}" cy="${cy}" r="40" fill="white" />`;
+
+      // Add center text
+      paths += `
+        <text x="${cx}" y="${cy - 5}" text-anchor="middle" class="text-xs fill-slate-400">Weekly</text>
+        <text x="${cx}" y="${cy + 15}" text-anchor="middle" class="text-base font-bold fill-slate-700">${formatCurrency(total)}</text>
+      `;
+
+      svg.innerHTML = paths;
+    }
+
+    // Render breakdown list
+    function renderBreakdownList() {
+      const list = document.getElementById('breakdown-list');
+      if (!list) return;
+
+      const total = getGrandTotal();
+
+      const items = Object.entries(SPENDING_CATEGORIES)
+        .map(([category, config]) => ({
+          category,
+          color: config.color,
+          value: getCategoryTotal(category),
+          percentage: total > 0 ? (getCategoryTotal(category) / total) * 100 : 0
+        }))
+        .sort((a, b) => b.value - a.value);
+
+      list.innerHTML = items.map(item => `
+        <div class="flex items-center gap-3">
+          <div class="w-3 h-3 rounded-full flex-shrink-0" style="background-color: ${item.color}"></div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-sm text-slate-600 truncate">${item.category}</span>
+              <span class="text-sm font-medium text-slate-700">${item.percentage.toFixed(0)}%</span>
+            </div>
+            <div class="h-2 bg-slate-100 rounded-full overflow-hidden">
+              <div
+                class="h-full rounded-full transition-all duration-300"
+                style="width: ${item.percentage}%; background-color: ${item.color}"
+              ></div>
+            </div>
+          </div>
+          <span class="text-sm text-slate-500 w-20 text-right">${formatCurrency(item.value)}/wk</span>
+        </div>
+      `).join('');
+    }
+
+    // Reset to defaults
+    document.getElementById('reset-all')?.addEventListener('click', () => {
+      initializeData();
+      renderCategories();
+      updateVisualization();
+    });
+
+    // Initialize
+    initializeData();
+    renderCategories();
+    updateVisualization();
+  </script>
+</Layout>
