@@ -8,7 +8,7 @@ export function detectBank(text: string): string {
   const t = text.toLowerCase();
   if (t.includes('anz bank') || t.includes('anz.co.nz')) return 'ANZ';
   if (t.includes('westpac') || t.includes('westpac.co.nz')) return 'Westpac';
-  if (t.includes('asb bank') || t.includes('asb.co.nz')) return 'ASB';
+  if (t.includes('asb bank') || t.includes('asb.co.nz') || t.includes('asb visa') || t.includes('asb credit card') || t.includes('asb true rewards')) return 'ASB';
   if (t.includes('bnz') || t.includes('bank of new zealand')) return 'BNZ';
   if (t.includes('kiwibank')) return 'Kiwibank';
   if (t.includes('tsb bank')) return 'TSB';
@@ -508,6 +508,111 @@ export function parseASBStatement(text: string, filename: string, documentId?: s
         textMatch: rawDesc.substring(0, 50)
       });
     }
+  }
+
+  // If no transactions found, try ASB credit card format
+  // Format: 1999   2 Apr   One NZ Prepay   Auckland   NZ   10.00   3 Apr   2,934.75
+  // Or with CR: 1999   3 Apr   Payment Received   Thank You   NZ   2,000.00 CR   4 Apr   1,118.18
+  if (transactions.length === 0) {
+    console.log('Trying ASB credit card format...');
+
+    // Split into lines and process each
+    const lines = text.split('\n');
+
+    // Track year - ASB credit card statements often don't include year in dates
+    // We'll infer it from statement period or current date
+    const currentYear = new Date().getFullYear();
+    let txnYear = currentYear;
+    if (periodEnd) {
+      txnYear = parseInt(periodEnd.split('-')[0]);
+    } else if (periodStart) {
+      txnYear = parseInt(periodStart.split('-')[0]);
+    }
+
+    // Pattern for credit card transactions:
+    // Optional card number/id, then date, description, location, country, amount, processed date, balance
+    // Examples:
+    // 1999   2 Apr   One NZ Prepay   Auckland   NZ   10.00   3 Apr   2,934.75
+    // 1999   3 Apr   Payment Received   Thank You   NZ   2,000.00 CR   4 Apr   1,118.18
+    // Use \s+ to handle tabs, multiple spaces, etc.
+    const ccPattern = /(\d{4})?\s+(\d{1,2})\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+(.+?)\s+([A-Z]{2})\s+([\d,]+\.\d{2})\s*(CR)?\s+(\d{1,2})\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+([\d,]+\.\d{2})/gi;
+
+    console.log('Text sample for CC pattern:', text.substring(0, 1000));
+
+    let ccMatch;
+    let matchCount = 0;
+    while ((ccMatch = ccPattern.exec(text)) !== null) {
+      matchCount++;
+      const [fullMatch, cardNum, day, month, rawDesc, country, amountStr, crFlag, procDay, procMonth, balance] = ccMatch;
+
+      console.log(`CC match ${matchCount}: day=${day}, month=${month}, desc="${rawDesc.substring(0, 30)}", amount=${amountStr}, cr=${crFlag || 'no'}`);
+
+      // Skip header rows or incomplete rows
+      if (!amountStr || rawDesc.toLowerCase().includes('opening balance') ||
+          rawDesc.toLowerCase().includes('closing balance')) {
+        continue;
+      }
+
+      // Build date - use statement year
+      const monthNum = getMonthNumber(month);
+      const date = `${txnYear}-${String(monthNum).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+
+      // Parse amount
+      let amount = parseAmount(amountStr);
+
+      // CR means credit (payment received, money IN)
+      // No CR means debit (purchase, money OUT)
+      if (crFlag && crFlag.trim() === 'CR') {
+        // Credit - positive amount
+        amount = Math.abs(amount);
+      } else {
+        // Debit - negative amount
+        amount = -Math.abs(amount);
+      }
+
+      if (amount === 0) continue;
+
+      // Clean up description - extract merchant name from "Merchant   Location"
+      const descParts = rawDesc.trim().split(/\s{2,}/);
+      const merchant = descParts[0] || rawDesc;
+      const location = descParts.length > 1 ? descParts.slice(1).join(' ') : '';
+
+      const desc = cleanDescription(merchant);
+      const fullDesc = location ? `${desc} (${location})` : desc;
+      const category = categorizeTransaction(fullDesc + ' ' + rawDesc, amount, '');
+
+      // Find page number
+      let pageNumber = 1;
+      if (pageTexts) {
+        for (const pt of pageTexts) {
+          if (pt.text.includes(merchant.substring(0, 20))) {
+            pageNumber = pt.pageNumber;
+            break;
+          }
+        }
+      }
+
+      const txnKey = `${date}-${amountStr}-${merchant.substring(0, 20)}`;
+      if (seenTxns.has(txnKey)) continue;
+      seenTxns.add(txnKey);
+
+      transactions.push({
+        id: generateId(),
+        date,
+        description: fullDesc,
+        rawDescription: rawDesc,
+        amount,
+        type: amount > 0 ? 'credit' : 'debit',
+        category,
+        source: filename,
+        accountNumber,
+        documentId,
+        pageNumber,
+        textMatch: rawDesc.substring(0, 50)
+      });
+    }
+
+    console.log(`ASB credit card parser found ${transactions.length} transactions`);
   }
 
   console.log(`ASB parser found ${transactions.length} transactions`);
